@@ -1,5 +1,7 @@
 package dev.simbiot.ast.statement.declaration;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -11,6 +13,14 @@ import dev.simbiot.ast.BaseNode;
 public class VariableDeclaration extends BaseNode implements Declaration {
     private final Kind kind;
     private final VariableDeclarator[] declarations;
+
+    public VariableDeclaration(VariableDeclarator... declarations) {
+        this(Kind.LET, declarations);
+    }
+
+    public VariableDeclaration(Kind kind, List<VariableDeclarator> declarations) {
+        this(kind, declarations.toArray(new VariableDeclarator[0]));
+    }
 
     @JsonCreator
     public VariableDeclaration(@JsonProperty("kind") Kind kind,

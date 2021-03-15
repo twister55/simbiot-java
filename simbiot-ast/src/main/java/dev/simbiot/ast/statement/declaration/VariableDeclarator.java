@@ -13,9 +13,8 @@ public class VariableDeclarator extends BaseNode {
     private Identifier id;
     private Expression init;
     
-    public VariableDeclarator(Identifier id) {
-        this();
-        this.id = id;
+    public VariableDeclarator(String id, Expression init) {
+        this(new Identifier(id), init);
     }
     
     public VariableDeclarator(Identifier id, Expression init) {

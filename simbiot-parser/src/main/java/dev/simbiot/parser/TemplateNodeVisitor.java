@@ -6,11 +6,22 @@ import java.util.List;
 import dev.simbiot.Runtime;
 import dev.simbiot.ast.expression.CallExpression;
 import dev.simbiot.ast.expression.Expression;
+import dev.simbiot.ast.expression.Identifier;
 import dev.simbiot.ast.expression.Literal;
+import dev.simbiot.ast.expression.MemberExpression;
+import dev.simbiot.ast.expression.UpdateExpression;
+import dev.simbiot.ast.expression.UpdateExpression.Operator;
+import dev.simbiot.ast.pattern.ObjectPattern;
+import dev.simbiot.ast.pattern.Pattern;
+import dev.simbiot.ast.pattern.Property;
 import dev.simbiot.ast.statement.BlockStatement;
 import dev.simbiot.ast.statement.ExpressionStatement;
 import dev.simbiot.ast.statement.IfStatement;
 import dev.simbiot.ast.statement.Statement;
+import dev.simbiot.ast.statement.WhileStatement;
+import dev.simbiot.ast.statement.declaration.VariableDeclaration;
+import dev.simbiot.ast.statement.declaration.VariableDeclaration.Kind;
+import dev.simbiot.ast.statement.declaration.VariableDeclarator;
 import dev.simbiot.parser.template.Attribute;
 import dev.simbiot.parser.template.AwaitBlock;
 import dev.simbiot.parser.template.Comment;
@@ -66,45 +77,18 @@ public class TemplateNodeVisitor implements Visitor {
 
     @Override
     public void visit(EachBlock block) {
-//        Identifier index = new Identifier(block.getIndex() == null ? "___index___" : block.getIndex());
-//        VariableDeclaration init = new VariableDeclaration(VariableDeclaration.Kind.LET)
-//                .addDeclarator(index, new Literal(0));
-//
-//        Pattern context = block.getContext();
-//        if (context instanceof Identifier) {
-//            init.addDeclarator((Identifier) context);
-//        } else if (context instanceof ObjectPattern) {
-//            ObjectPattern objectPattern = (ObjectPattern) context;
-//            objectPattern.getProperties().forEach(property -> init.addDeclarator(property.getKey()));
-//        } else {
-//            throw new ParseException(context.getType() + " is not supported in context of EachBlock");
-//        }
-//
-//        List<Expression> update = new ArrayList<>();
-//        update.add(UpdateExpression.increment(index));
+        final VariableDeclarator iterator = new VariableDeclarator(
+            "__iterator__", new CallExpression("iterator", block.getExpression())
+        );
+        final CallExpression hasNext = new CallExpression(
+            new MemberExpression("__iterator__", "hasNext")
+        );
 
-//        if (context instanceof Identifier) {
-//            update.add(AssignmentExpression.assign(context, build("read", block.getExpression(), index)));
-//        } else {
-//            ObjectPattern objectPattern = (ObjectPattern) context;
-//            objectPattern.getProperties().forEach(property -> {
-//                CallExpression value = build("get", block.getExpression(), index);
-//                AssignmentExpression assign = AssignmentExpression.assign(
-//                        property.getKey(),
-//                        build("access", value, property.getValue())
-//                );
-//
-//                update.add(assign);
-//            });
-//        }
-
-//        ForStatement statement = new ForStatement();
-//        statement.setInit(init);
-////        statement.setTest(BinaryExpression.less(index, build("size", block.getExpression())));
-//        statement.setUpdate(new SequenceExpression(update));
-//        statement.setBody(inner(block.getChildren()));
-//
-//        add(statement);
+        if (block.getIndex() != null) {
+            append(new VariableDeclaration(new VariableDeclarator(block.getIndex(), new Literal(0))));
+        }
+        append(new VariableDeclaration(iterator));
+        append(new WhileStatement(hasNext, getBody(block)));
     }
 
     @Override
@@ -199,7 +183,44 @@ public class TemplateNodeVisitor implements Visitor {
     private Statement inner(TemplateNode[] children) {
         final List<Statement> result = new ArrayList<>();
         accept(new Fragment(children), result);
-        return new BlockStatement(result.toArray(new Statement[0]));
+        return new BlockStatement(result);
+    }
+
+    private Statement getBody(EachBlock block) {
+        final Pattern context = block.getContext();
+        final List<VariableDeclarator> vars = new ArrayList<>();
+
+        if (context instanceof Identifier) {
+            vars.add(new VariableDeclarator(
+                (Identifier) context, new CallExpression(new MemberExpression("__iterator__", "next")))
+            );
+        } else if (context instanceof ObjectPattern) {
+            vars.add(new VariableDeclarator(
+                "context", new CallExpression(new MemberExpression("iterator", "next"))
+            ));
+
+            ObjectPattern objectPattern = (ObjectPattern) context;
+            for (Property prop : objectPattern.getProperties()) {
+                vars.add(new VariableDeclarator(
+                    prop.getKey(), new MemberExpression("context", ((Identifier) prop.getValue()).getName())
+                ));
+            }
+        } else {
+            throw new ParseException(context.getType() + " is not supported in context of EachBlock");
+        }
+
+        Statement incrementIndex = Statement.EMPTY;
+        if (block.getIndex() != null) {
+            incrementIndex = new ExpressionStatement(
+                new UpdateExpression(Operator.INCREMENT, new Identifier(block.getIndex()), false)
+            );
+        }
+
+        return new BlockStatement(new Statement[] {
+            new VariableDeclaration(Kind.LET, vars),
+            incrementIndex,
+            inner(block.getChildren())
+        });
     }
 
     private void write(String value) {

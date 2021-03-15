@@ -43,6 +43,7 @@ import dev.simbiot.ast.statement.module.ImportDeclaration;
     @Type(value = WithStatement.class, name = "WithStatement")
 })
 public interface Statement extends Node {
+    EmptyStatement EMPTY = new EmptyStatement();
 
     void accept(Visitor visitor);
 

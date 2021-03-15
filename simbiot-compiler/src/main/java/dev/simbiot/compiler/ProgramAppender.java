@@ -1,6 +1,7 @@
 package dev.simbiot.compiler;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import dev.simbiot.Runtime;
@@ -15,6 +16,7 @@ import dev.simbiot.ast.statement.ExpressionStatement;
 import dev.simbiot.ast.statement.IfStatement;
 import dev.simbiot.ast.statement.Statement;
 import dev.simbiot.ast.statement.StatementVisitor;
+import dev.simbiot.ast.statement.WhileStatement;
 import dev.simbiot.ast.statement.declaration.VariableDeclaration;
 import dev.simbiot.ast.statement.declaration.VariableDeclarator;
 import dev.simbiot.compiler.bytecode.GoTo;
@@ -45,10 +47,14 @@ public class ProgramAppender implements ByteCodeAppender {
     private int varsCount = 0;
 
     public final static ForLoadedMethod BOOLEAN;
+    public final static ForLoadedMethod HAS_NEXT;
+    public final static ForLoadedMethod NEXT;
 
     static {
         try {
             BOOLEAN = new ForLoadedMethod(Runtime.class.getMethod("toBoolean", Object.class));
+            HAS_NEXT = new ForLoadedMethod(Iterator.class.getMethod("hasNext"));
+            NEXT = new ForLoadedMethod(Iterator.class.getMethod("next"));
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -114,9 +120,24 @@ public class ProgramAppender implements ByteCodeAppender {
                     append(new JumpTarget(ifLabel));
                 } else {
                     append(new GoTo(elseLabel));
+                    append(new JumpTarget(ifLabel));
                     append(ctx, statement.getAlternate());
                     append(new JumpTarget(elseLabel));
                 }
+            }
+
+            @Override
+            public void visit(WhileStatement statement) {
+                final Label loopStart = new Label();
+                final Label loopEnd = new Label();
+
+                append(new JumpTarget(loopStart));
+                append(ctx.get("__iterator__"));
+                append(MethodInvocation.invoke(HAS_NEXT));
+                append(new IfFalse(loopEnd));
+                append(ctx, statement.getBody());
+                append(new GoTo(loopStart));
+                append(new JumpTarget(loopEnd));
             }
         });
     }
@@ -159,18 +180,34 @@ public class ProgramAppender implements ByteCodeAppender {
                 final Expression callee = expression.getCallee();
                 final Expression[] arguments = expression.getArguments();
 
-                if (callee instanceof MemberExpression) {
+                if (callee instanceof Identifier) {
+                    final Identifier calleeIdentifier = (Identifier) callee;
+                    final String name = calleeIdentifier.getName();
+
+                    try {
+                        final ForLoadedMethod forLoadedMethod = new ForLoadedMethod(Runtime.class.getMethod(name, Object.class));
+                        append(ctx, arguments);
+                        append(MethodInvocation.invoke(forLoadedMethod));
+                    } catch (NoSuchMethodException e) {
+                        throw new IllegalArgumentException("Method " + name + " can not be resolved", e);
+                    }
+                } else if (callee instanceof MemberExpression) {
                     final Identifier calleeObject = (Identifier) ((MemberExpression) callee).getObject();
                     final Identifier calleeProperty = (Identifier) ((MemberExpression) callee).getProperty();
 
-                    final MethodDescription.InGenericShape method = ctx.getType(calleeObject.getName())
+                    if ("next".equals(calleeProperty.getName())) {
+                        append(ctx.get(calleeObject.getName()));
+                        append(MethodInvocation.invoke(NEXT));
+                    } else {
+                        final MethodDescription.InGenericShape method = ctx.getType(calleeObject.getName())
                             .getDeclaredMethods()
                             .filter(named(calleeProperty.getName()).and(takesArguments(arguments.length)))
                             .getOnly();
 
-                    append(ctx.get(calleeObject.getName()));
-                    append(ctx, arguments);
-                    append(MethodInvocation.invoke(method));
+                        append(ctx.get(calleeObject.getName()));
+                        append(ctx, arguments);
+                        append(MethodInvocation.invoke(method));
+                    }
                 }
             }
         });

@@ -1,9 +1,21 @@
 package dev.simbiot;
 
+import java.util.Iterator;
+import java.util.List;
+
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class Runtime {
+
+    @SuppressWarnings("unchecked")
+    public static Iterator<Object> iterator(Object obj) {
+        if (obj instanceof List) {
+            return ((List<Object>) obj).iterator();
+        }
+
+        throw new IllegalArgumentException("Only java.util.List supported for iterating");
+    }
 
     public static boolean toBoolean(Object obj) {
         if (obj instanceof String) {

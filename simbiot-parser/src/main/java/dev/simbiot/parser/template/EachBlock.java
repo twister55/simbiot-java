@@ -19,7 +19,7 @@ public class EachBlock extends Block implements TemplateNode {
     @JsonCreator
     public EachBlock(@JsonProperty("expression") Expression expression,
                      @JsonProperty("context")  Pattern context,
-                     @JsonProperty("expression") TemplateNode[] children,
+                     @JsonProperty("children") TemplateNode[] children,
                      @Nullable @JsonProperty("index")  String index) {
         super("EachBlock", children);
         this.expression = expression;

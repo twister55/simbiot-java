@@ -16,6 +16,7 @@ import dev.simbiot.ast.statement.ExpressionStatement;
 import dev.simbiot.ast.statement.IfStatement;
 import dev.simbiot.ast.statement.Statement;
 import dev.simbiot.ast.statement.StatementVisitor;
+import dev.simbiot.ast.statement.WhileStatement;
 import dev.simbiot.ast.statement.declaration.VariableDeclaration;
 import dev.simbiot.ast.statement.declaration.VariableDeclarator;
 
@@ -68,6 +69,11 @@ public class ProgramTransformer {
             }
 
             @Override
+            public void visit(WhileStatement statement) {
+                append(new WhileStatement(statement.getTest(), transformInner(statement.getBody())));
+            }
+
+            @Override
             public void visit(VariableDeclaration statement) {
                 final VariableDeclarator[] declarations = statement.getDeclarations();
 
@@ -95,22 +101,25 @@ public class ProgramTransformer {
     }
 
     private CallExpression transform(CallExpression expression) {
-        final Identifier callee = (Identifier) expression.getCallee();
-        final Expression[] arguments = expression.getArguments();
+        final Expression callee = expression.getCallee();
 
-        switch (callee.getName()) {
-            case "attr":
-                return attr(arguments);
+        if (callee instanceof Identifier) {
+            final Identifier id = (Identifier) callee;
+            final Expression[] arguments = expression.getArguments();
 
-            case "debug":
-                return debug(arguments);
+            switch (id.getName()) {
+                case "attr":
+                    return attr(arguments);
 
-            case "write":
-                return write(arguments);
+                case "debug":
+                    return debug(arguments);
 
-            default:
-                return expression;
+                case "write":
+                    return write(arguments);
+            }
         }
+
+        return expression;
     }
 
     @Nullable

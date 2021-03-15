@@ -1,0 +1,6 @@
+group 'dev.svelte'
+version '0.0.1'
+
+dependencies {
+    compile group: 'org.jetbrains', name: 'annotations', version: '16.0.1'
+}

@@ -1,1 +1,3 @@
 rootProject.name = 'simbiot-java'
+
+include 'simbiot'

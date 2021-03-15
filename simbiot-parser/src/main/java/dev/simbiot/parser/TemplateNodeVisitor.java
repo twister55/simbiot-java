@@ -1,12 +1,15 @@
 package dev.simbiot.parser;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import dev.simbiot.Runtime;
 import dev.simbiot.ast.expression.CallExpression;
 import dev.simbiot.ast.expression.Expression;
 import dev.simbiot.ast.expression.Literal;
+import dev.simbiot.ast.statement.BlockStatement;
 import dev.simbiot.ast.statement.ExpressionStatement;
+import dev.simbiot.ast.statement.IfStatement;
 import dev.simbiot.ast.statement.Statement;
 import dev.simbiot.parser.template.Attribute;
 import dev.simbiot.parser.template.AwaitBlock;
@@ -58,7 +61,7 @@ public class TemplateNodeVisitor implements Visitor {
 
     @Override
     public void visit(DebugTag tag) {
-        add(new ExpressionStatement(new CallExpression("debug", tag.getIdentifiers())));
+        append(new ExpressionStatement(new CallExpression("debug", tag.getIdentifiers())));
     }
 
     @Override
@@ -134,14 +137,13 @@ public class TemplateNodeVisitor implements Visitor {
 
     @Override
     public void visit(IfBlock block) {
-//        IfStatement statement = new IfStatement();
-//        statement.setTest(block.getExpression());
-//        statement.setConsequent(inner(block.getChildren()));
-//        if (block.getElse() != null) {
-//            statement.setAlternate(inner(block.getElse().getChildren()));
-//        }
-//
-//        add(statement);
+        IfStatement statement = new IfStatement(
+            block.getExpression(),
+            inner(block.getChildren()),
+            block.getElse() != null ? inner(block.getElse().getChildren()) : null
+        );
+
+        append(statement);
     }
 
     @Override
@@ -190,15 +192,15 @@ public class TemplateNodeVisitor implements Visitor {
         if (current.length() > 0) {
             String value = current.toString();
             current.setLength(0);
-            addWriteStatement(new Literal(value), false);
+            appendWrite(new Literal(value), false);
         }
     }
 
-//    private Statement inner(TemplateNode[] children) {
-//        final ArrayList<Statement> result = new ArrayList<>();
-//        accept(new Fragment(children), result);
-//        return wrap(result);
-//    }
+    private Statement inner(TemplateNode[] children) {
+        final List<Statement> result = new ArrayList<>();
+        accept(new Fragment(children), result);
+        return new BlockStatement(result.toArray(new Statement[0]));
+    }
 
     private void write(String value) {
         current.append(value);
@@ -213,14 +215,14 @@ public class TemplateNodeVisitor implements Visitor {
             return;
         }
 
-        addWriteStatement(expression, escape);
+        appendWrite(expression, escape);
     }
 
-    private void addWriteStatement(Expression expression, boolean escape) {
-        add(new ExpressionStatement(new CallExpression("write", expression, new Literal(escape))));
+    private void appendWrite(Expression expression, boolean escape) {
+        append(new ExpressionStatement(new CallExpression("write", expression, new Literal(escape))));
     }
 
-    private void add(Statement statement) {
+    private void append(Statement statement) {
         flush();
         target.add(statement);
     }

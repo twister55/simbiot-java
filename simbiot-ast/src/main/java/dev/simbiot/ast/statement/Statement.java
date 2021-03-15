@@ -46,18 +46,6 @@ public interface Statement extends Node {
 
     void accept(Visitor visitor);
 
-    static Statement wrap(Statement[] statements) {
-        if (statements == null) {
-            return new EmptyStatement();
-        }
-
-        if (statements.length == 1) {
-            return statements[0];
-        }
-
-        return new BlockStatement(statements);
-    }
-
     interface Visitor {
 
         void visit(BlockStatement statement);

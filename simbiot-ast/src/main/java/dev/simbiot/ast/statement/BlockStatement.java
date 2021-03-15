@@ -1,5 +1,7 @@
 package dev.simbiot.ast.statement;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -10,6 +12,10 @@ import dev.simbiot.ast.BaseNode;
  */
 public class BlockStatement extends BaseNode implements Statement {
     private final Statement[] body;
+
+    public BlockStatement(List<Statement> body) {
+        this(body.toArray(new Statement[0]));
+    }
 
     @JsonCreator
     public BlockStatement(@JsonProperty("body") Statement[] body) {

@@ -5,6 +5,22 @@ package dev.simbiot;
  */
 public class Runtime {
 
+    public static boolean toBoolean(Object obj) {
+        if (obj instanceof String) {
+            return !"".equals(obj);
+        }
+
+        if (obj instanceof Integer) {
+            return ((Integer) obj) != 0;
+        }
+
+        if (obj instanceof Boolean) {
+            return Boolean.TRUE.equals(obj);
+        }
+
+        return obj != null;
+    }
+
     public static String escape(String html) {
         StringBuilder result = new StringBuilder();
 

@@ -44,33 +44,33 @@ public class Compiler {
     }
 
     public Component compile(String id, Program program) {
-        final ProgramTransformer transformer = new ProgramTransformer();
-
-        transformer.transform(program);
-
-        return compile(id, transformer.statements(), transformer.parts());
-    }
-
-    public Component compile(String id, List<Statement> statements, List<String> parts) {
         try {
-            final Unloaded<Component> unloaded = new ByteBuddy()
-                    .subclass(Component.class)
-                    .name("component." + id)
-                    .initializer(initializer(parts))
-                    .defineField(STATIC_PARTS_FIELD_NAME, BYTE_ARRAY_TYPE, STATIC_PARTS_FIELD_MODIFIERS)
-                    .method(named("render"))
-                    .intercept(renderMethod(statements))
-                    .make();
+            final Unloaded<Component> unloaded = build(id, program);
 
             unloaded.saveIn(new File("generated"));
 
             return unloaded
-                    .load(Compiler.class.getClassLoader())
-                    .getLoaded()
-                    .newInstance();
+                .load(Compiler.class.getClassLoader())
+                .getLoaded()
+                .newInstance();
         } catch (Exception e) {
             throw new RuntimeException("Error while creating component", e);
         }
+    }
+
+    public Unloaded<Component> build(String id, Program program) {
+        final ProgramTransformer transformer = new ProgramTransformer();
+
+        transformer.transform(program);
+
+        return new ByteBuddy()
+            .subclass(Component.class)
+            .name("component." + id)
+            .initializer(initializer(transformer.parts))
+            .defineField(STATIC_PARTS_FIELD_NAME, BYTE_ARRAY_TYPE, STATIC_PARTS_FIELD_MODIFIERS)
+            .method(named("render"))
+            .intercept(renderMethod(transformer.statements))
+            .make();
     }
 
     private ByteCodeAppender initializer(List<String> parts) {

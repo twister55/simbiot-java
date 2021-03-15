@@ -1,0 +1,7 @@
+group 'dev.svelte.ast'
+version '0.0.1'
+
+dependencies {
+    compile group: 'org.jetbrains', name: 'annotations', version: '16.0.1'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.12.0'
+}

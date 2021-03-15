@@ -8,6 +8,7 @@ import java.util.List;
 import dev.simbiot.ast.Program;
 import dev.simbiot.ast.SourceType;
 import dev.simbiot.ast.expression.CallExpression;
+import dev.simbiot.ast.expression.Identifier;
 import dev.simbiot.ast.expression.Literal;
 import dev.simbiot.ast.statement.Statement;
 import dev.simbiot.ast.statement.StatementVisitor;
@@ -56,10 +57,14 @@ public class SvelteParser extends AstParser<Ast> {
 
         for (int i = 0; i < declarations.length; i++) {
             final VariableDeclarator declarator = declarations[i];
-            result[i] = new VariableDeclarator(
-                declarator.getId(),
-                new CallExpression("get", new Literal(declarator.getId().getName()), declarator.getInit())
-            );
+            final Identifier id = declarator.getId();
+            final Literal name = new Literal(id.getName());
+
+            if (declarator.getInit() != null) {
+                result[i] = new VariableDeclarator(id, new CallExpression("attr", name, declarator.getInit()));
+            } else {
+                result[i] = new VariableDeclarator(id, new CallExpression("attr", name));
+            }
         }
 
         return new VariableDeclaration(Kind.LET, result);

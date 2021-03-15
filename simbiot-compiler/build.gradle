@@ -1,0 +1,6 @@
+dependencies {
+    compile project(':simbiot')
+    compile project(':simbiot-ast')
+
+    compile group: 'net.bytebuddy', name: 'byte-buddy', version: '1.10.19'
+}

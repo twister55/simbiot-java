@@ -23,6 +23,12 @@ public class MapProps implements Props {
         return (K) data.get(name);
     }
 
+    @Override
+    @SuppressWarnings("unchecked")
+    public <K> K get(String name, K defaultValue) {
+        return (K) data.getOrDefault(name, defaultValue);
+    }
+
     public <K> MapProps set(String name, K value) {
         data.put(name, value);
         return this;

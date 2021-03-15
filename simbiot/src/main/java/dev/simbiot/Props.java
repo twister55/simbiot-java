@@ -7,4 +7,6 @@ public interface Props {
 
     <K> K get(String name);
 
+    <K> K get(String name, K defaultValue);
+
 }

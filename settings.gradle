@@ -2,4 +2,5 @@ rootProject.name = 'simbiot-java'
 
 include 'simbiot'
 include 'simbiot-ast'
+include 'simbiot-compiler'
 include 'simbiot-parser'

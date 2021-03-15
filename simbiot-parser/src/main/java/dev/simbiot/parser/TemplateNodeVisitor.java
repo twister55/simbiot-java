@@ -121,7 +121,9 @@ public class TemplateNodeVisitor implements Visitor {
         }
 
         write(">"); // TODO check if self closing
-        element.accept(this);
+        for (TemplateNode child : element.getChildren()) {
+            child.accept(this);
+        }
         write("</" + element.getName() + ">");
     }
 

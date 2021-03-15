@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import dev.simbiot.ast.statement.Statement;
+import dev.simbiot.ast.statement.Statement.Visitor;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
@@ -39,7 +40,7 @@ public class Program extends BaseNode {
         this.comments = comments;
     }
 
-    public void accept(Statement.Visitor visitor) {
+    public void accept(Visitor visitor) {
         for (Statement statement : body) {
             statement.accept(visitor);
         }

@@ -8,10 +8,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class CallExpression extends BaseCallExpression {
 
+    public CallExpression(String callee, Expression... arguments) {
+        this(new Identifier(callee), arguments, false);
+    }
+    
     public CallExpression(Expression callee, Expression... arguments) {
         this(callee, arguments, false);
     }
-    
+
     @JsonCreator
     public CallExpression(@JsonProperty("callee") Expression callee,
                           @JsonProperty("arguments") Expression[] arguments,

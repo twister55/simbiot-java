@@ -1,29 +1,20 @@
 package dev.simbiot.ast.statement.declaration;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import dev.simbiot.ast.BaseNode;
-import dev.simbiot.ast.expression.Expression;
-import dev.simbiot.ast.expression.Identifier;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class VariableDeclaration extends BaseNode implements Declaration {
     private final Kind kind;
-    private final List<VariableDeclarator> declarations;
-
-    public VariableDeclaration() {
-        this(Kind.LET, new ArrayList<>());
-    }
+    private final VariableDeclarator[] declarations;
 
     @JsonCreator
     public VariableDeclaration(@JsonProperty("kind") Kind kind,
-                               @JsonProperty("declarations") List<VariableDeclarator> declarations) {
+                               @JsonProperty("declarations") VariableDeclarator[] declarations) {
         super("VariableDeclaration");
         this.kind = kind;
         this.declarations = declarations;
@@ -38,20 +29,7 @@ public class VariableDeclaration extends BaseNode implements Declaration {
         return kind;
     }
 
-    public VariableDeclaration addDeclarator(Identifier id) {
-        return addDeclarator(new VariableDeclarator(id));
-    }
-
-    public VariableDeclaration addDeclarator(Identifier id, Expression init) {
-        return addDeclarator(new VariableDeclarator(id, init));
-    }
-
-    public VariableDeclaration addDeclarator(VariableDeclarator declarator) {
-        declarations.add(declarator);
-        return this;
-    }
-
-    public List<VariableDeclarator> getDeclarations() {
+    public VariableDeclarator[] getDeclarations() {
         return declarations;
     }
 

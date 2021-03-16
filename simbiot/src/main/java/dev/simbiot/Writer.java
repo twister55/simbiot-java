@@ -10,8 +10,7 @@ public interface Writer extends Closeable {
 
     void write(byte[] value) throws IOException;
 
-    void write(Object value, boolean escape) throws IOException;
+    void write(Object value) throws IOException;
 
     void flush() throws IOException;
-
 }

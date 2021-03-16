@@ -1,51 +1,35 @@
 package dev.simbiot.compiler;
 
 import java.io.File;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import dev.simbiot.Component;
+import dev.simbiot.Props;
+import dev.simbiot.Slots;
+import dev.simbiot.Writer;
 import dev.simbiot.ast.Program;
-import dev.simbiot.ast.statement.Statement;
+import dev.simbiot.compiler.bytecode.ArrayField;
 import net.bytebuddy.ByteBuddy;
-import net.bytebuddy.description.field.FieldDescription;
-import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType.Unloaded;
 import net.bytebuddy.dynamic.scaffold.InstrumentedType;
 import net.bytebuddy.implementation.Implementation;
 import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
-import net.bytebuddy.implementation.bytecode.collection.ArrayFactory;
-import net.bytebuddy.implementation.bytecode.constant.TextConstant;
-import net.bytebuddy.implementation.bytecode.member.FieldAccess;
-import net.bytebuddy.implementation.bytecode.member.MethodInvocation;
+import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.jar.asm.Opcodes;
-import static net.bytebuddy.description.type.TypeDescription.ForLoadedType.of;
-import static net.bytebuddy.implementation.bytecode.StackManipulation.Compound;
-import static net.bytebuddy.implementation.bytecode.StackManipulation.Size;
+import static dev.simbiot.compiler.bytecode.ArrayField.BYTE_ARRAY;
 import static net.bytebuddy.matcher.ElementMatchers.named;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class Compiler {
-    private static final String STATIC_PARTS_FIELD_NAME = "$$PARTS";
-    private static final int STATIC_PARTS_FIELD_MODIFIERS = Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL;
-    private static final TypeDescription.Generic BYTE_ARRAY_TYPE = of(byte[][].class).asGenericType();
-    private static final ArrayFactory ARRAY_FACTORY = ArrayFactory.forType(of(byte[].class).asGenericType());
-    private static final MethodDescription GET_BYTES;
+    public static final String CONSTANTS_FIELD_NAME = "$$CONSTANTS";
 
-    static {
-        try {
-            GET_BYTES = new MethodDescription.ForLoadedMethod(String.class.getMethod("getBytes"));
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
-    }
+    private final ProgramProcessor processor = new ProgramProcessor();
 
     public Component compile(String id, Program program) {
         try {
-            final Unloaded<Component> unloaded = build(id, program);
+            final Unloaded<Component> unloaded = process(id, program);
 
             unloaded.saveIn(new File("generated"));
 
@@ -58,53 +42,47 @@ public class Compiler {
         }
     }
 
-    public Unloaded<Component> build(String id, Program program) {
-        final ProgramTransformer transformer = new ProgramTransformer();
-
-        transformer.transform(program);
+    public Unloaded<Component> process(String id, Program program) {
+        final ProcessContext context = new ProcessContext();
 
         return new ByteBuddy()
             .subclass(Component.class)
             .name("component." + id)
-            .initializer(initializer(transformer.parts))
-            .defineField(STATIC_PARTS_FIELD_NAME, BYTE_ARRAY_TYPE, STATIC_PARTS_FIELD_MODIFIERS)
+            .defineField(CONSTANTS_FIELD_NAME, BYTE_ARRAY, Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL)
             .method(named("render"))
-            .intercept(renderMethod(transformer.statements))
+            .intercept(new Implementation() {
+                @Override
+                public ByteCodeAppender appender(Target target) {
+                    return (mv, ctx, method) -> new ByteCodeAppender.Size(
+                        process(context, program, ctx.getInstrumentedType()).apply(mv, ctx).getMaximalSize(),
+                        method.getStackSize() + context.getLocalVarsCount()
+                    );
+                }
+
+                @Override
+                public InstrumentedType prepare(InstrumentedType type) {
+                    return type;
+                }
+            })
+            .initializer((visitor, ctx, method) -> {
+                final StackManipulation.Size size = new StackManipulation.Compound(
+                    new ArrayField(ctx.getInstrumentedType(), CONSTANTS_FIELD_NAME, context.getConstants())
+                ).apply(visitor, ctx);
+
+                return new ByteCodeAppender.Size(size.getMaximalSize(), method.getStackSize());
+            })
             .make();
     }
 
-    private ByteCodeAppender initializer(List<String> parts) {
-        return (visitor, ctx, method) -> {
-            final FieldDescription field = ctx.getInstrumentedType()
-                    .getDeclaredFields()
-                    .filter(named(STATIC_PARTS_FIELD_NAME))
-                    .getOnly();
-
-            final List<Compound> staticParts = parts.stream()
-                    .map(TextConstant::new)
-                    .map(constant -> new Compound(constant, MethodInvocation.invoke(GET_BYTES)))
-                    .collect(Collectors.toList());
-
-            final Size size = new Compound(
-                    ARRAY_FACTORY.withValues(staticParts),
-                    FieldAccess.forField(field).write()
-            ).apply(visitor, ctx);
-
-            return new ByteCodeAppender.Size(size.getMaximalSize(), method.getStackSize());
-        };
+    protected StackManipulation.Compound process(ProcessContext context, Program program, TypeDescription type) {
+        prepareContext(context, type);
+        return processor.process(context, program);
     }
 
-    private Implementation renderMethod(List<Statement> statements) {
-        return new Implementation() {
-            @Override
-            public ByteCodeAppender appender(Target target) {
-                return new ProgramAppender(statements);
-            }
-
-            @Override
-            public InstrumentedType prepare(InstrumentedType type) {
-                return type;
-            }
-        };
+    protected void prepareContext(ProcessContext context, TypeDescription type) {
+        context.fields(type.getDeclaredFields());
+        context.store("writer", Writer.class);
+        context.store("props", Props.class);
+        context.store("slots", Slots.class);
     }
 }

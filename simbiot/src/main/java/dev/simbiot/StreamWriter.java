@@ -19,14 +19,8 @@ public class StreamWriter implements Writer {
     }
 
     @Override
-    public void write(Object value, boolean escape) throws IOException {
-        if (value instanceof String) {
-            String str = (String) value;
-
-            write((escape ? Runtime.escape(str) : str).getBytes());
-        } else {
-            write(String.valueOf(value).getBytes());
-        }
+    public void write(Object value) throws IOException {
+        write(String.valueOf(value).getBytes());
     }
 
     @Override

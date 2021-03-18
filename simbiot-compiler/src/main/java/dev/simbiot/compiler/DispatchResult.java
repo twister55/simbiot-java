@@ -26,6 +26,7 @@ public class DispatchResult {
         this.arguments = arguments;
     }
 
+    @Nullable
     public StackManipulation getCallee() {
         return callee;
     }

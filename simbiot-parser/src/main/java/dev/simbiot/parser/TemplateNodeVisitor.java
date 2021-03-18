@@ -3,6 +3,8 @@ package dev.simbiot.parser;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jetbrains.annotations.Nullable;
+
 import dev.simbiot.Runtime;
 import dev.simbiot.ast.expression.CallExpression;
 import dev.simbiot.ast.expression.Expression;
@@ -49,6 +51,8 @@ public class TemplateNodeVisitor implements Visitor {
     private final List<Statement> target;
     private final StringBuilder current;
 
+    private int index;
+
     public static void accept(Fragment fragment, List<Statement> target) {
         final TemplateNodeVisitor visitor = new TemplateNodeVisitor(target);
         fragment.accept(visitor);
@@ -77,18 +81,14 @@ public class TemplateNodeVisitor implements Visitor {
 
     @Override
     public void visit(EachBlock block) {
-        final VariableDeclarator iterator = new VariableDeclarator(
-            "__iterator__", new CallExpression("iterator", block.getExpression())
-        );
-        final CallExpression hasNext = new CallExpression(
-            new MemberExpression("__iterator__", "hasNext")
-        );
+        final String iteratorName = nextVarName();
+        final String indexName = block.getIndex();
 
-        if (block.getIndex() != null) {
-            append(new VariableDeclaration(new VariableDeclarator(block.getIndex(), new Literal(0))));
+        if (indexName != null) {
+            append(new VariableDeclaration(indexName, new Literal(0)));
         }
-        append(new VariableDeclaration(iterator));
-        append(new WhileStatement(hasNext, getBody(block)));
+        append(new VariableDeclaration(iteratorName, new CallExpression("iterator", block.getExpression())));
+        append(loop(block.getContext(), block.getChildren(), iteratorName, indexName));
     }
 
     @Override
@@ -186,23 +186,23 @@ public class TemplateNodeVisitor implements Visitor {
         return new BlockStatement(result);
     }
 
-    private Statement getBody(EachBlock block) {
-        final Pattern context = block.getContext();
+    private String nextVarName() {
+        return "local" + (index++);
+    }
+
+    private Statement loop(Pattern context, TemplateNode[] body, String iteratorName, @Nullable String indexName) {
         final List<VariableDeclarator> vars = new ArrayList<>();
+        final CallExpression callNext = new CallExpression(iteratorName, "next");
 
         if (context instanceof Identifier) {
-            vars.add(new VariableDeclarator(
-                (Identifier) context, new CallExpression(new MemberExpression("__iterator__", "next")))
-            );
+            vars.add(new VariableDeclarator((Identifier) context, callNext));
         } else if (context instanceof ObjectPattern) {
-            vars.add(new VariableDeclarator(
-                "context", new CallExpression(new MemberExpression("iterator", "next"))
-            ));
+            final String contextName = nextVarName();
 
-            ObjectPattern objectPattern = (ObjectPattern) context;
-            for (Property prop : objectPattern.getProperties()) {
+            vars.add(new VariableDeclarator(contextName, callNext));
+            for (Property prop : ((ObjectPattern) context).getProperties()) {
                 vars.add(new VariableDeclarator(
-                    prop.getKey(), new MemberExpression("context", ((Identifier) prop.getValue()).getName())
+                    prop.getKey(), new MemberExpression(contextName, ((Identifier) prop.getValue()).getName())
                 ));
             }
         } else {
@@ -210,17 +210,20 @@ public class TemplateNodeVisitor implements Visitor {
         }
 
         Statement incrementIndex = Statement.EMPTY;
-        if (block.getIndex() != null) {
+        if (indexName != null) {
             incrementIndex = new ExpressionStatement(
-                new UpdateExpression(Operator.INCREMENT, new Identifier(block.getIndex()), false)
+                new UpdateExpression(Operator.INCREMENT, new Identifier(indexName), false)
             );
         }
 
-        return new BlockStatement(new Statement[] {
-            new VariableDeclaration(Kind.LET, vars),
-            incrementIndex,
-            inner(block.getChildren())
-        });
+        return new WhileStatement(
+            new CallExpression(iteratorName, "hasNext"),
+            new BlockStatement(
+                new VariableDeclaration(Kind.LET, vars),
+                incrementIndex,
+                inner(body)
+            )
+        );
     }
 
     private void write(String value) {

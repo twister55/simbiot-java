@@ -18,7 +18,7 @@ public class BlockStatement extends BaseNode implements Statement {
     }
 
     @JsonCreator
-    public BlockStatement(@JsonProperty("body") Statement[] body) {
+    public BlockStatement(@JsonProperty("body") Statement... body) {
         this("BlockStatement", body);
     }
 

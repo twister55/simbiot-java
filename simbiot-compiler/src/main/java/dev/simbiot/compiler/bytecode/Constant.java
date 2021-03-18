@@ -1,31 +1,19 @@
 package dev.simbiot.compiler.bytecode;
 
 import dev.simbiot.ast.expression.Literal;
-import net.bytebuddy.implementation.Implementation.Context;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
+import net.bytebuddy.implementation.bytecode.StackManipulation.Compound;
 import net.bytebuddy.implementation.bytecode.constant.IntegerConstant;
 import net.bytebuddy.implementation.bytecode.constant.NullConstant;
 import net.bytebuddy.implementation.bytecode.constant.TextConstant;
-import net.bytebuddy.jar.asm.MethodVisitor;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class Constant implements StackManipulation {
-    private final StackManipulation delegate;
+public class Constant extends Compound {
 
     public Constant(Literal literal) {
-        this.delegate = resolve(literal);
-    }
-
-    @Override
-    public boolean isValid() {
-        return delegate.isValid();
-    }
-
-    @Override
-    public Size apply(MethodVisitor mv, Context context) {
-        return delegate.apply(mv, context);
+        super(resolve(literal));
     }
 
     private static StackManipulation resolve(Literal literal) {

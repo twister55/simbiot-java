@@ -3,6 +3,8 @@ package dev.simbiot.compiler;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jetbrains.annotations.Nullable;
+
 import dev.simbiot.ast.Program;
 import dev.simbiot.ast.expression.CallExpression;
 import dev.simbiot.ast.expression.Expression;
@@ -18,11 +20,11 @@ import dev.simbiot.ast.statement.StatementVisitor;
 import dev.simbiot.ast.statement.WhileStatement;
 import dev.simbiot.ast.statement.declaration.VariableDeclaration;
 import dev.simbiot.ast.statement.declaration.VariableDeclarator;
-import dev.simbiot.compiler.Dispatcher.DispatchResult;
 import dev.simbiot.compiler.bytecode.Constant;
 import dev.simbiot.compiler.bytecode.GoTo;
 import dev.simbiot.compiler.bytecode.IfFalse;
 import dev.simbiot.compiler.bytecode.JumpTarget;
+import dev.simbiot.compiler.bytecode.ObjectAccess;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.implementation.bytecode.StackManipulation.Compound;
 import net.bytebuddy.implementation.bytecode.collection.ArrayAccess;
@@ -72,11 +74,9 @@ public class ProgramProcessor {
                     final Expression init = declarator.getInit();
 
                     if (init instanceof CallExpression) {
-                        append(ctx.store(name, dispatch(ctx, init).getType()));
+                        append(ctx.store(name, dispatch(ctx, init).getReturnType()));
                     } else {
-                        if (init != null) {
-                            append(ctx, init);
-                        }
+                        append(ctx, init);
                         append(ctx.store(name));
                     }
                 }
@@ -127,23 +127,41 @@ public class ProgramProcessor {
         }
     }
 
-    private void append(ProcessContext ctx, Expression expression) {
-        expression.accept(new ExpressionVisitor() {
-            @Override
-            public void visit(Identifier expression) {
-                append(ctx.get(expression.getName()));
-            }
+    private void append(ProcessContext ctx, @Nullable Expression expression) {
+        if (expression == null) {
+            return;
+        }
 
+        expression.accept(new ExpressionVisitor() {
             @Override
             public void visit(Literal expression) {
                 append(new Constant(expression));
             }
 
             @Override
+            public void visit(Identifier expression) {
+                append(ctx.get(expression.getName()));
+            }
+
+            @Override
             public void visit(MemberExpression expression) {
-                append(ctx, expression.getObject());
-                append(ctx, expression.getProperty());
-                append(ArrayAccess.REFERENCE.load()); // FIXME
+                Expression obj = expression.getObject();
+                Expression prop = expression.getProperty();
+
+                if (obj instanceof Identifier) {
+                    final String name = ((Identifier) obj).getName();
+
+                    if ("#ctx".equals(name)) { // FIXME
+                        append(ctx.get(expression.getLeadingComments()[0].getValue()));
+                    } else if (ctx.getType(name).isArray()) {
+                        append(ctx.get(name));
+                        append(ctx, prop);
+                        append(ArrayAccess.REFERENCE.load());
+                    }
+                } else {
+                    append(ctx, obj);
+                    append(new ObjectAccess(prop));
+                }
             }
 
             @Override
@@ -155,15 +173,15 @@ public class ProgramProcessor {
 
     private DispatchResult dispatch(ProcessContext ctx, Expression expression) {
         final DispatchResult result = dispatcher.dispatch(ctx, (CallExpression) expression);
-        if (result.callee != null) {
-            append(result.callee);
-        }
-        append(ctx, result.arguments);
-        append(MethodInvocation.invoke(result.method));
+        append(result.getCallee());
+        append(ctx, result.getArguments());
+        append(MethodInvocation.invoke(result.getMethod()));
         return result;
     }
 
-    private void append(StackManipulation manipulation) {
-        manipulations.add(manipulation);
+    private void append(@Nullable StackManipulation manipulation) {
+        if (manipulation != null) {
+            manipulations.add(manipulation);
+        }
     }
 }

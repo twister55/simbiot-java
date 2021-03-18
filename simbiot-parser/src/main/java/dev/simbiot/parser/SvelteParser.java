@@ -11,7 +11,6 @@ import dev.simbiot.ast.expression.CallExpression;
 import dev.simbiot.ast.expression.Identifier;
 import dev.simbiot.ast.expression.Literal;
 import dev.simbiot.ast.statement.Statement;
-import dev.simbiot.ast.statement.StatementVisitor;
 import dev.simbiot.ast.statement.declaration.Declaration;
 import dev.simbiot.ast.statement.declaration.VariableDeclaration;
 import dev.simbiot.ast.statement.declaration.VariableDeclaration.Kind;
@@ -34,16 +33,15 @@ public class SvelteParser extends AstParser<Ast> {
         final Ast ast = readValue(in);
 
         if (ast.instance != null) {
-            ast.instance.getContent().accept(new StatementVisitor() {
-                @Override
-                public void visit(ExportNamedDeclaration declaration) {
-                    final Declaration exportedDeclaration = declaration.getDeclaration();
+            for (Statement statement : ast.instance.getContent().getBody()) {
+                if (statement instanceof ExportNamedDeclaration) {
+                    Declaration declaration = ((ExportNamedDeclaration) statement).getDeclaration();
 
-                    if (exportedDeclaration instanceof VariableDeclaration) {
-                        result.add(createPropDeclaration((VariableDeclaration) exportedDeclaration));
+                    if (declaration instanceof VariableDeclaration) {
+                        result.add(prop((VariableDeclaration) declaration));
                     }
                 }
-            });
+            }
         }
 
         accept(ast.html, result);
@@ -51,19 +49,17 @@ public class SvelteParser extends AstParser<Ast> {
         return new Program(SourceType.SCRIPT, result);
     }
 
-    private Statement createPropDeclaration(VariableDeclaration declaration) {
-        final VariableDeclarator[] declarations = declaration.getDeclarations();
-        final VariableDeclarator[] result = new VariableDeclarator[declarations.length];
+    private Statement prop(VariableDeclaration declaration) {
+        final List<VariableDeclarator> result = new ArrayList<>();
 
-        for (int i = 0; i < declarations.length; i++) {
-            final VariableDeclarator declarator = declarations[i];
+        for (final VariableDeclarator declarator : declaration.getDeclarations()) {
             final Identifier id = declarator.getId();
             final Literal name = new Literal(id.getName());
 
             if (declarator.getInit() != null) {
-                result[i] = new VariableDeclarator(id, new CallExpression("attr", name, declarator.getInit()));
+                result.add(new VariableDeclarator(id, new CallExpression("attr", name, declarator.getInit())));
             } else {
-                result[i] = new VariableDeclarator(id, new CallExpression("attr", name));
+                result.add(new VariableDeclarator(id, new CallExpression("attr", name)));
             }
         }
 

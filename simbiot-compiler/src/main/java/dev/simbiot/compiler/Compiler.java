@@ -16,7 +16,7 @@ import net.bytebuddy.implementation.Implementation;
 import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.jar.asm.Opcodes;
-import static dev.simbiot.compiler.bytecode.ArrayField.BYTE_ARRAY;
+import static net.bytebuddy.description.type.TypeDescription.ForLoadedType.of;
 import static net.bytebuddy.matcher.ElementMatchers.named;
 
 /**
@@ -48,7 +48,7 @@ public class Compiler {
         return new ByteBuddy()
             .subclass(Component.class)
             .name("component." + id)
-            .defineField(CONSTANTS_FIELD_NAME, BYTE_ARRAY, Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL)
+            .defineField(CONSTANTS_FIELD_NAME, of(byte[][].class), Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL)
             .method(named("render"))
             .intercept(new Implementation() {
                 @Override

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import dev.simbiot.ast.BaseNode;
+import dev.simbiot.ast.expression.Expression;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
@@ -13,6 +14,10 @@ import dev.simbiot.ast.BaseNode;
 public class VariableDeclaration extends BaseNode implements Declaration {
     private final Kind kind;
     private final VariableDeclarator[] declarations;
+
+    public VariableDeclaration(String id, Expression init) {
+        this(new VariableDeclarator(id, init));
+    }
 
     public VariableDeclaration(VariableDeclarator... declarations) {
         this(Kind.LET, declarations);

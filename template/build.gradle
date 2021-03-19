@@ -1,0 +1,51 @@
+plugins {
+    id 'org.springframework.boot' version '2.4.2'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'com.github.node-gradle.node' version '2.2.4'
+    id 'java'
+}
+
+group = 'dev.simbiot.template'
+version = '0.1.0'
+sourceCompatibility = '8'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile project(':simbiot')
+    compile project(':simbiot-parser')
+    compile project(':simbiot-compiler')
+
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.12.1'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.0'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.12.0'
+
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+task copy_client(type: Copy) {
+    from "$buildDir/client"
+    into "$buildDir/resources/main/static/client"
+}
+
+task copy_ast(type: Copy) {
+    from "$buildDir/ast"
+    into "$buildDir/resources/main/ast"
+}
+
+processResources {
+    dependsOn npm_install, npm_run_build
+
+    include 'static/**/*'
+    include '*.properties'
+    include '*.html'
+
+    finalizedBy copy_client, copy_ast
+}
+
+test {
+    useJUnitPlatform()
+}

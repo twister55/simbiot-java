@@ -47,7 +47,7 @@ public class Compiler {
 
         return new ByteBuddy()
             .subclass(Component.class)
-            .name("component." + id)
+            .name(id)
             .defineField(CONSTANTS_FIELD_NAME, of(byte[][].class), Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL)
             .method(named("render"))
             .intercept(new Implementation() {

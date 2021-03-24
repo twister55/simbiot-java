@@ -12,7 +12,8 @@ import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.description.type.TypeDescription.Generic;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.implementation.bytecode.constant.NullConstant;
-import static net.bytebuddy.implementation.bytecode.member.FieldAccess.forField;
+import net.bytebuddy.implementation.bytecode.member.FieldAccess;
+import net.bytebuddy.implementation.bytecode.member.MethodVariableAccess;
 import static net.bytebuddy.implementation.bytecode.member.MethodVariableAccess.REFERENCE;
 import static net.bytebuddy.matcher.ElementMatchers.named;
 
@@ -91,11 +92,24 @@ public class ProcessContext {
     }
 
     private StackManipulation getField(String name) {
-        final FieldList<InDefinedShape> filter = fields.filter(named(name));
-        return filter.isEmpty() ? NullConstant.INSTANCE : forField(filter.getOnly()).read();
+        final InDefinedShape fieldShape = getFieldShape(name);
+
+        if (fieldShape == null) {
+            return NullConstant.INSTANCE;
+        }
+
+        return new StackManipulation.Compound(
+            fieldShape.isStatic() ? StackManipulation.Trivial.INSTANCE : MethodVariableAccess.loadThis(),
+            FieldAccess.forField(fieldShape).read()
+        );
     }
 
     private Generic getFieldType(String name) {
-        return fields.filter(named(name)).getOnly().getType();
+        return getFieldShape(name).getType();
+    }
+
+    private InDefinedShape getFieldShape(String name) {
+        final FieldList<InDefinedShape> filter = fields.filter(named(name));
+        return filter.isEmpty() ? null : filter.getOnly();
     }
 }

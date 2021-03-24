@@ -6,6 +6,7 @@ import java.util.List;
 import org.jetbrains.annotations.Nullable;
 
 import dev.simbiot.Runtime;
+import dev.simbiot.ast.NodeException;
 import dev.simbiot.ast.expression.CallExpression;
 import dev.simbiot.ast.expression.Expression;
 import dev.simbiot.ast.expression.Identifier;
@@ -47,21 +48,20 @@ import dev.simbiot.parser.template.Title;
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class TemplateNodeVisitor implements Visitor {
+public class SvelteNodeVisitor implements Visitor {
     private final List<Statement> target;
     private final StringBuilder current;
 
     private int index;
 
-    public static void accept(Fragment fragment, List<Statement> target) {
-        final TemplateNodeVisitor visitor = new TemplateNodeVisitor(target);
-        fragment.accept(visitor);
-        visitor.flush();
-    }
-
-    private TemplateNodeVisitor(List<Statement> target) {
+    public SvelteNodeVisitor(List<Statement> target) {
         this.target = target;
         this.current = new StringBuilder();
+    }
+
+    public void accept(Fragment fragment) {
+        fragment.accept(this);
+        flush();
     }
 
     @Override
@@ -157,13 +157,10 @@ public class TemplateNodeVisitor implements Visitor {
 
     @Override
     public void visit(Text text) {
-        if (!text.getData().trim().isEmpty()) {
-            final String value = text.getData()
-                    .replace("\r", "")
-                    .replace("\n", "")
-                    .replace("\t", "");
+        final String data = text.getData();
 
-            write(value);
+        if (!data.trim().isEmpty()) {
+            write(data.replace("[\r\n\t]", ""));
         }
     }
 
@@ -182,7 +179,8 @@ public class TemplateNodeVisitor implements Visitor {
 
     private Statement inner(TemplateNode[] children) {
         final List<Statement> result = new ArrayList<>();
-        accept(new Fragment(children), result);
+        final SvelteNodeVisitor visitor = new SvelteNodeVisitor(result);
+        visitor.accept(new Fragment(children));
         return new BlockStatement(result);
     }
 
@@ -206,7 +204,7 @@ public class TemplateNodeVisitor implements Visitor {
                 ));
             }
         } else {
-            throw new ParseException(context.getType() + " is not supported in context of EachBlock");
+            throw new NodeException(context.getType() + " is not supported in context of EachBlock");
         }
 
         Statement incrementIndex = Statement.EMPTY;

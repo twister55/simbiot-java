@@ -1,11 +1,12 @@
 package dev.simbiot.parser;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jetbrains.annotations.Nullable;
+
 import dev.simbiot.ast.Program;
+import dev.simbiot.ast.ProgramLoader;
 import dev.simbiot.ast.SourceType;
 import dev.simbiot.ast.expression.CallExpression;
 import dev.simbiot.ast.expression.Identifier;
@@ -16,37 +17,47 @@ import dev.simbiot.ast.statement.declaration.VariableDeclaration;
 import dev.simbiot.ast.statement.declaration.VariableDeclaration.Kind;
 import dev.simbiot.ast.statement.declaration.VariableDeclarator;
 import dev.simbiot.ast.statement.module.ExportNamedDeclaration;
-import static dev.simbiot.parser.TemplateNodeVisitor.accept;
+import dev.simbiot.parser.template.Fragment;
+import dev.simbiot.parser.template.Script;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class SvelteParser extends AstParser<Ast> {
+public class SvelteLoader extends ProgramLoader<SvelteAst> {
 
-    public SvelteParser() {
-        super(Ast.class);
+    public SvelteLoader() {
+        super(SvelteAst.class);
     }
 
     @Override
-    public Program parse(InputStream in) throws IOException {
-        final List<Statement> result = new ArrayList<>();
-        final Ast ast = readValue(in);
+    protected Program process(SvelteAst ast) {
+        final List<Statement> body = new ArrayList<>();
 
-        if (ast.instance != null) {
-            for (Statement statement : ast.instance.getContent().getBody()) {
+        process(ast.instance, body);
+        process(ast.html, body);
+
+        return new Program(SourceType.SCRIPT, body);
+    }
+
+    private void process(@Nullable Script instance, List<Statement> target) {
+        if (instance != null) {
+            for (Statement statement : instance.getContent().getBody()) {
                 if (statement instanceof ExportNamedDeclaration) {
                     Declaration declaration = ((ExportNamedDeclaration) statement).getDeclaration();
 
                     if (declaration instanceof VariableDeclaration) {
-                        result.add(prop((VariableDeclaration) declaration));
+                        target.add(prop((VariableDeclaration) declaration));
                     }
                 }
             }
         }
+    }
 
-        accept(ast.html, result);
-
-        return new Program(SourceType.SCRIPT, result);
+    private void process(@Nullable Fragment fragment, List<Statement> target) {
+        if (fragment != null) {
+            final SvelteNodeVisitor visitor = new SvelteNodeVisitor(target);
+            visitor.accept(fragment);
+        }
     }
 
     private Statement prop(VariableDeclaration declaration) {

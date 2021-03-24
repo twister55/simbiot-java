@@ -11,7 +11,8 @@ import dev.simbiot.parser.template.Script;
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class Ast {
+public class SvelteAst {
+    @Nullable
     public final Fragment html;
     @Nullable
     public final Script instance;
@@ -19,9 +20,9 @@ public class Ast {
     public final Script module;
 
     @JsonCreator
-    public Ast(@JsonProperty("html") Fragment html,
-               @Nullable @JsonProperty("instance") Script instance,
-               @Nullable @JsonProperty("module") Script module) {
+    public SvelteAst(@Nullable @JsonProperty("html") Fragment html,
+                     @Nullable @JsonProperty("instance") Script instance,
+                     @Nullable @JsonProperty("module") Script module) {
         this.html = html;
         this.instance = instance;
         this.module = module;

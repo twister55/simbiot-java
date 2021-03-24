@@ -13,11 +13,11 @@ public class Property extends BaseProperty<Expression> {
 
     @JsonCreator
     public Property(@JsonProperty("kind") Kind kind,
-                    @JsonProperty("kind") Identifier key,
-                    @JsonProperty("kind") Expression value,
-                    @JsonProperty("kind") boolean method,
-                    @JsonProperty("kind") boolean shorthand,
-                    @JsonProperty("kind") boolean computed) {
+                    @JsonProperty("key") Identifier key,
+                    @JsonProperty("value") Expression value,
+                    @JsonProperty("method") boolean method,
+                    @JsonProperty("shorthand") boolean shorthand,
+                    @JsonProperty("computed") boolean computed) {
         super("Property", kind, key, value, method, shorthand, computed);
     }
 }

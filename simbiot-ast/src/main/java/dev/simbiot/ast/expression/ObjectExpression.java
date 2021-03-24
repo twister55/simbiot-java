@@ -13,7 +13,7 @@ public class ObjectExpression extends BaseNode implements Expression {
     private final Property[] properties;
 
     @JsonCreator
-    public ObjectExpression(@JsonProperty("properties") Property[] properties) {
+    public ObjectExpression(@JsonProperty("properties") Property... properties) {
         super("ObjectExpression");
         this.properties = properties;
     }

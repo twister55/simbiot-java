@@ -1,4 +1,6 @@
 <script>
+    import Inner from './nested/Inner.svelte';
+
     export let user;
 </script>
 
@@ -15,4 +17,6 @@
         Access denied
     {/if}
 </main>
+
+<Inner />
 

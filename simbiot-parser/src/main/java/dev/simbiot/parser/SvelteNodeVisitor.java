@@ -2,6 +2,7 @@ package dev.simbiot.parser;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -50,12 +51,14 @@ import dev.simbiot.parser.template.Title;
  */
 public class SvelteNodeVisitor implements Visitor {
     private final List<Statement> target;
+    private final Map<String, String> urls;
     private final StringBuilder current;
 
     private int index;
 
-    public SvelteNodeVisitor(List<Statement> target) {
+    public SvelteNodeVisitor(List<Statement> target, Map<String, String> urls) {
         this.target = target;
+        this.urls = urls;
         this.current = new StringBuilder();
     }
 
@@ -132,7 +135,7 @@ public class SvelteNodeVisitor implements Visitor {
 
     @Override
     public void visit(InlineComponent component) {
-
+        appendCall("component", new Literal(urls.get(component.getName())));
     }
 
     @Override
@@ -179,7 +182,7 @@ public class SvelteNodeVisitor implements Visitor {
 
     private Statement inner(TemplateNode[] children) {
         final List<Statement> result = new ArrayList<>();
-        final SvelteNodeVisitor visitor = new SvelteNodeVisitor(result);
+        final SvelteNodeVisitor visitor = new SvelteNodeVisitor(result, urls);
         visitor.accept(new Fragment(children));
         return new BlockStatement(result);
     }
@@ -241,7 +244,11 @@ public class SvelteNodeVisitor implements Visitor {
     }
 
     private void appendWrite(Expression expression, boolean escape) {
-        append(new ExpressionStatement(new CallExpression("write", expression, new Literal(escape))));
+        appendCall("write", expression, new Literal(escape));
+    }
+
+    private void appendCall(String callee, Expression... args) {
+        append(new ExpressionStatement(new CallExpression(callee, args)));
     }
 
     private void append(Statement statement) {

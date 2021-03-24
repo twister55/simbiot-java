@@ -1,9 +1,9 @@
 package dev.simbiot.parser;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-
-import org.jetbrains.annotations.Nullable;
+import java.util.Map;
 
 import dev.simbiot.ast.Program;
 import dev.simbiot.ast.ProgramLoader;
@@ -12,11 +12,15 @@ import dev.simbiot.ast.expression.CallExpression;
 import dev.simbiot.ast.expression.Identifier;
 import dev.simbiot.ast.expression.Literal;
 import dev.simbiot.ast.statement.Statement;
+import dev.simbiot.ast.statement.StatementVisitor;
 import dev.simbiot.ast.statement.declaration.Declaration;
 import dev.simbiot.ast.statement.declaration.VariableDeclaration;
 import dev.simbiot.ast.statement.declaration.VariableDeclaration.Kind;
 import dev.simbiot.ast.statement.declaration.VariableDeclarator;
 import dev.simbiot.ast.statement.module.ExportNamedDeclaration;
+import dev.simbiot.ast.statement.module.ImportDeclaration;
+import dev.simbiot.ast.statement.module.ImportDefaultSpecifier;
+import dev.simbiot.ast.statement.module.ModuleSpecifier;
 import dev.simbiot.parser.template.Fragment;
 import dev.simbiot.parser.template.Script;
 
@@ -31,33 +35,55 @@ public class SvelteLoader extends ProgramLoader<SvelteAst> {
 
     @Override
     protected Program process(SvelteAst ast) {
-        final List<Statement> body = new ArrayList<>();
+        final List<Statement> result = new ArrayList<>();
+        final Map<String, String> urls = new HashMap<>();
 
-        process(ast.instance, body);
-        process(ast.html, body);
+        if (ast.instance != null) {
+            process(ast.instance, result, urls);
+        }
 
-        return new Program(SourceType.SCRIPT, body);
+        if (ast.html != null) {
+            process(ast.html, result, urls);
+        }
+
+        return new Program(SourceType.SCRIPT, result);
     }
 
-    private void process(@Nullable Script instance, List<Statement> target) {
-        if (instance != null) {
-            for (Statement statement : instance.getContent().getBody()) {
-                if (statement instanceof ExportNamedDeclaration) {
-                    Declaration declaration = ((ExportNamedDeclaration) statement).getDeclaration();
+    private void process(Script instance, List<Statement> target, Map<String, String> urls) {
+        instance.getContent().accept(new StatementVisitor() {
+            @Override
+            public void visit(ImportDeclaration statement) {
+                final String source = statement.getSource().getString();
 
-                    if (declaration instanceof VariableDeclaration) {
-                        target.add(prop((VariableDeclaration) declaration));
+                if (source.endsWith(".svelte")) {
+                    // ./nested/Inner.svelte -> nested.Inner
+                    final String componentId = source
+                        .substring(2, source.length() - 7)
+                        .replace("/", ".");
+
+                    for (ModuleSpecifier specifier : statement.getSpecifiers()) {
+                        if (specifier instanceof ImportDefaultSpecifier) {
+                            ImportDefaultSpecifier importDefault = (ImportDefaultSpecifier) specifier;
+                            urls.put(importDefault.getLocal().getName(), componentId);
+                        }
                     }
                 }
             }
-        }
+
+            @Override
+            public void visit(ExportNamedDeclaration statement) {
+                final Declaration declaration = statement.getDeclaration();
+
+                if (declaration instanceof VariableDeclaration) {
+                    target.add(prop((VariableDeclaration) declaration));
+                }
+            }
+        });
     }
 
-    private void process(@Nullable Fragment fragment, List<Statement> target) {
-        if (fragment != null) {
-            final SvelteNodeVisitor visitor = new SvelteNodeVisitor(target);
-            visitor.accept(fragment);
-        }
+    private void process(Fragment fragment, List<Statement> target, Map<String, String> urls) {
+        final SvelteNodeVisitor visitor = new SvelteNodeVisitor(target, urls);
+        visitor.accept(fragment);
     }
 
     private Statement prop(VariableDeclaration declaration) {

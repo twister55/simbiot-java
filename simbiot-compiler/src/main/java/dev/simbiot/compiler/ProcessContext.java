@@ -21,18 +21,31 @@ import static net.bytebuddy.matcher.ElementMatchers.named;
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class ProcessContext {
+    private final String id;
     private final Map<String, Integer> refs;
     private final Map<String, Generic> types;
     private final List<StackManipulation> constants;
+    private final List<String> componentIds;
 
     private FieldList<InDefinedShape> fields;
     private int offset;
     private int localVarsCount = 0;
 
-    public ProcessContext() {
+    public ProcessContext(String id) {
+        this.id = id;
         this.refs = new HashMap<>();
         this.types = new HashMap<>();
         this.constants = new ArrayList<>();
+        this.componentIds = new ArrayList<>();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public List<String> getInlineComponentIds() {
+        // id.equals("App") ? Collections.singletonList("nested.Inner") : Collections.emptyList();
+        return componentIds;
     }
 
     public int getLocalVarsCount() {
@@ -77,6 +90,12 @@ public class ProcessContext {
     public int addConstant(String text) {
         final int index = constants.size();
         constants.add(new ConstantBytes(text));
+        return index;
+    }
+
+    public int addComponentId(String id) {
+        final int index = componentIds.size();
+        componentIds.add(id);
         return index;
     }
 

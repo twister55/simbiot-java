@@ -2,6 +2,7 @@ package dev.simbiot.compiler;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import dev.simbiot.Component;
 import dev.simbiot.ComponentProvider;
@@ -43,25 +44,42 @@ public class Compiler implements ComponentProvider {
     public Component getComponent(String id) throws IOException {
         final ProcessContext context = new ProcessContext(id);
 
-        return createInstance(loadClass(context));
+        return createInstance(loadClass(context), getDependencies(context));
     }
 
-    private Component createInstance(Class<? extends Component> type) {
+    private Component createInstance(Class<? extends Component> type, Component[] dependencies) {
         try {
-            return type.newInstance();
+            return type
+                .getConstructor(Component[].class)
+                .newInstance((Object) dependencies);
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }
     }
 
+    private Component[] getDependencies(ProcessContext context) throws IOException {
+        final List<String> componentIds = context.getInlineComponentIds();
+        final Component[] components = new Component[componentIds.size()];
+        for (int i = 0; i < componentIds.size(); i++) {
+            components[i] = getComponent(componentIds.get(i));
+        }
+        return components;
+    }
+
     private Class<? extends Component> loadClass(ProcessContext context) throws IOException {
-        return compile(context)
+        return compileAndSave(context)
             .load(Component.class.getClassLoader())
             .getLoaded();
     }
 
+    private Unloaded<Component> compileAndSave(ProcessContext context) throws IOException {
+        final Unloaded<Component> unloaded = compile(context);
+        unloaded.saveIn(new File("generated"));
+        return unloaded;
+    }
+
     private Unloaded<Component> compile(ProcessContext context) throws IOException {
-        final Unloaded<Component> unloaded = new ByteBuddy()
+        return new ByteBuddy()
             .subclass(Component.class)
             .name(context.getId())
             .defineField(CONSTANTS_FIELD_NAME, of(byte[][].class), Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL)
@@ -73,10 +91,6 @@ public class Compiler implements ComponentProvider {
             .intercept(renderMethod(context, loader.load(context.getId())))
             .initializer(staticInitializer(context))
             .make();
-
-        unloaded.saveIn(new File("generated"));
-
-        return unloaded;
     }
 
     private ByteCodeAppender staticInitializer(ProcessContext context) {

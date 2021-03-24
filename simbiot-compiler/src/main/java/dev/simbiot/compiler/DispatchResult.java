@@ -49,6 +49,11 @@ public class DispatchResult {
         private MethodDescription method;
         private Expression[] arguments;
 
+        public Builder callee(StackManipulation... callee) {
+            this.callee = new StackManipulation.Compound(callee);
+            return this;
+        }
+
         public Builder callee(StackManipulation callee) {
             this.callee = callee;
             return this;
@@ -69,7 +74,7 @@ public class DispatchResult {
             return this;
         }
 
-        public Builder args(Expression[] args) {
+        public Builder args(Expression... args) {
             arguments = args;
             return this;
         }

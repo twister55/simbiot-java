@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import dev.simbiot.ast.BaseNode;
-import dev.simbiot.ast.expression.Expression;
 import dev.simbiot.ast.pattern.Pattern;
 
 /**

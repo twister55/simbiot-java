@@ -29,6 +29,10 @@ public abstract class BaseCallExpression extends BaseNode implements Expression 
         return arguments;
     }
 
+    public int getArgumentsCount() {
+        return arguments.length;
+    }
+
     public boolean isOptional() {
         return optional;
     }

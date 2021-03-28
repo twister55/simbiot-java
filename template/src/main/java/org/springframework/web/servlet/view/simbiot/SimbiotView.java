@@ -16,7 +16,7 @@ import dev.simbiot.StreamWriter;
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class SimbiotView extends AbstractTemplateView {
-    private Component page;
+    private Component component;
 
     @Override
     protected void renderMergedTemplateModel(Map<String, Object> model,
@@ -26,13 +26,13 @@ public class SimbiotView extends AbstractTemplateView {
         render(model, response);
     }
 
-    public void setViewComponent(Template template, Component body) {
-        this.page = new Page(template, body);
+    public void setViewComponent(Component component) {
+        this.component = component;
     }
 
     private void render(Map<String, Object> model, HttpServletResponse response) throws Exception {
         final StreamWriter writer = new StreamWriter(response.getOutputStream());
-        page.render(writer, new MapProps(model), new Slots());
+        this.component.render(writer, new MapProps(model), new Slots());
         writer.flush();
     }
 }

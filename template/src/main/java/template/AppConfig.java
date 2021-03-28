@@ -2,11 +2,12 @@ package template;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.view.simbiot.SimbiotViewResolver;
 
-import dev.simbiot.parser.SvelteParser;
+import dev.simbiot.ComponentProvider;
+import dev.simbiot.compiler.CompilingProvider;
+import dev.simbiot.parser.SvelteLoader;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
@@ -15,11 +16,14 @@ import dev.simbiot.parser.SvelteParser;
 public class AppConfig {
 
     @Bean
-    public ViewResolver getViewResolver(ResourceLoader loader) {
-        SimbiotViewResolver resolver = new SimbiotViewResolver();
-        resolver.setParser(new SvelteParser());
-        resolver.setResourceLoader(loader);
+    public ViewResolver getViewResolver(ComponentProvider provider) {
+        SimbiotViewResolver resolver = new SimbiotViewResolver(provider);
         resolver.setCache(false);
         return resolver;
+    }
+
+    @Bean
+    public ComponentProvider getComponentProvider() {
+        return new CompilingProvider(new SvelteLoader());
     }
 }

@@ -78,6 +78,11 @@ public class SvelteLoader extends ProgramLoader<SvelteAst> {
                     target.add(prop((VariableDeclaration) declaration));
                 }
             }
+
+            @Override
+            public void visit(VariableDeclaration statement) {
+                target.add(statement);
+            }
         });
     }
 
@@ -94,9 +99,9 @@ public class SvelteLoader extends ProgramLoader<SvelteAst> {
             final Literal name = new Literal(id.getName());
 
             if (declarator.getInit() != null) {
-                result.add(new VariableDeclarator(id, new CallExpression("attr", name, declarator.getInit())));
+                result.add(new VariableDeclarator(id, new CallExpression("@attr", name, declarator.getInit())));
             } else {
-                result.add(new VariableDeclarator(id, new CallExpression("attr", name)));
+                result.add(new VariableDeclarator(id, new CallExpression("@attr", name)));
             }
         }
 

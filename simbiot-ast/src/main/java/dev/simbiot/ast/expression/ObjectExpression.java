@@ -1,5 +1,8 @@
 package dev.simbiot.ast.expression;
 
+import java.util.Iterator;
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -9,11 +12,11 @@ import dev.simbiot.ast.pattern.Property;
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class ObjectExpression extends BaseNode implements Expression {
-    private final Property[] properties;
+public class ObjectExpression extends BaseNode implements Expression, Iterable<Property> {
+    private final List<Property> properties;
 
     @JsonCreator
-    public ObjectExpression(@JsonProperty("properties") Property... properties) {
+    public ObjectExpression(@JsonProperty("properties") List<Property> properties) {
         super("ObjectExpression");
         this.properties = properties;
     }
@@ -23,7 +26,8 @@ public class ObjectExpression extends BaseNode implements Expression {
         visitor.visit(this);
     }
 
-    public Property[] getProperties() {
-        return properties;
+    @Override
+    public Iterator<Property> iterator() {
+        return properties.iterator();
     }
 }

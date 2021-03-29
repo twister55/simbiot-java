@@ -6,12 +6,14 @@ import java.util.List;
 import java.util.Map;
 
 import dev.simbiot.compiler.bytecode.ConstantBytes;
+import dev.simbiot.compiler.program.Chunk;
 import net.bytebuddy.description.field.FieldDescription.InDefinedShape;
 import net.bytebuddy.description.field.FieldList;
-import net.bytebuddy.description.type.TypeDescription;
+import net.bytebuddy.description.method.ParameterDescription;
+import net.bytebuddy.description.method.ParameterList;
 import net.bytebuddy.description.type.TypeDescription.Generic;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
-import net.bytebuddy.implementation.bytecode.constant.NullConstant;
+import net.bytebuddy.implementation.bytecode.StackManipulation.Compound;
 import net.bytebuddy.implementation.bytecode.member.FieldAccess;
 import net.bytebuddy.implementation.bytecode.member.MethodVariableAccess;
 import static net.bytebuddy.implementation.bytecode.member.MethodVariableAccess.REFERENCE;
@@ -21,9 +23,6 @@ import static net.bytebuddy.matcher.ElementMatchers.named;
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class CompilerContext {
-    public static final String CONSTANTS_FIELD_NAME = "$$CONSTANTS";
-    public static final String COMPONENTS_FIELD_NAME = "$$components";
-
     private final String id;
     private final Map<String, Integer> refs;
     private final Map<String, Generic> types;
@@ -31,8 +30,8 @@ public class CompilerContext {
     private final List<String> componentIds;
 
     private FieldList<InDefinedShape> fields;
+    private ParameterList<?> parameters;
     private int offset;
-    private int localVarsCount = 0;
 
     public CompilerContext(String id) {
         this.id = id;
@@ -47,38 +46,50 @@ public class CompilerContext {
     }
 
     public int getLocalVarsCount() {
-        return localVarsCount;
+        return refs.size();
     }
 
-    public StackManipulation store(String name) {
-        localVarsCount++;
-        return REFERENCE.storeAt(storeRef(name));
-    }
-
-    public StackManipulation store(String name, Class<?> type) {
-        types.put(name, TypeDescription.ForLoadedType.of(type).asGenericType());
-        return store(name);
-    }
-
-    public StackManipulation store(String name, Generic type) {
-        types.put(name, type);
-        return store(name);
-    }
-
-    public StackManipulation get(String name) {
+    public Chunk resolve(String name) {
         if ("undefined".equals(name)) {
-            return NullConstant.INSTANCE;
+            return Chunk.NULL;
         }
 
-        return getRef(name);
+        final Integer offset = refs.get(name);
+        if (offset == null) {
+            final FieldList<InDefinedShape> filter = fields.filter(named(name));
+            if (!filter.isEmpty()) {
+                final InDefinedShape shape = filter.getOnly();
+                final Compound manipulation = new Compound(
+                    shape.isStatic() ? StackManipulation.Trivial.INSTANCE : MethodVariableAccess.loadThis(),
+                    FieldAccess.forField(shape).read()
+                );
+                return new Chunk(manipulation, shape.getType());
+            }
+            return Chunk.NULL;
+        }
+
+        return new Chunk(REFERENCE.loadFrom(offset), types.get(name));
     }
 
-    public Generic getType(String name) {
-        return types.computeIfAbsent(name, this::getFieldType);
+    public Chunk argument(int index) {
+        final ParameterDescription o = this.parameters.get(index);
+        return new Chunk(REFERENCE.loadFrom(o.getOffset()), o.getType());
     }
 
     public void fields(FieldList<InDefinedShape> fields) {
         this.fields = fields;
+    }
+
+    public void parameters(ParameterList<?> parameters) {
+        this.parameters = parameters;
+        this.offset = parameters.size();
+    }
+
+    public StackManipulation store(String name, Chunk result) {
+        final int ref = ++offset;
+        types.put(name, result.type());
+        refs.put(name, ref);
+        return new Compound(result.build(), REFERENCE.storeAt(ref));
     }
 
     public List<StackManipulation> getConstants() {
@@ -99,38 +110,5 @@ public class CompilerContext {
         final int index = componentIds.size();
         componentIds.add(id);
         return index;
-    }
-
-    private StackManipulation getRef(String name) {
-        final Integer offset = refs.get(name);
-        return offset != null ? REFERENCE.loadFrom(offset) : getField(name);
-    }
-
-    private int storeRef(String name) {
-        final int ref = ++offset;
-        this.refs.put(name, ref);
-        return ref;
-    }
-
-    private StackManipulation getField(String name) {
-        final InDefinedShape fieldShape = getFieldShape(name);
-
-        if (fieldShape == null) {
-            return NullConstant.INSTANCE;
-        }
-
-        return new StackManipulation.Compound(
-            fieldShape.isStatic() ? StackManipulation.Trivial.INSTANCE : MethodVariableAccess.loadThis(),
-            FieldAccess.forField(fieldShape).read()
-        );
-    }
-
-    private Generic getFieldType(String name) {
-        return getFieldShape(name).getType();
-    }
-
-    private InDefinedShape getFieldShape(String name) {
-        final FieldList<InDefinedShape> filter = fields.filter(named(name));
-        return filter.isEmpty() ? null : filter.getOnly();
     }
 }

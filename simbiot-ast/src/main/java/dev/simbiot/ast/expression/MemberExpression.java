@@ -23,6 +23,10 @@ public class MemberExpression extends BaseNode implements Expression, Pattern {
         this(new Identifier(objectId), new Identifier(propertyId), true, true);
     }
 
+    public MemberExpression(Expression objectId, Expression propertyId) {
+        this(objectId, propertyId, true, true);
+    }
+
     @JsonCreator
     public MemberExpression(@JsonProperty("object") Expression object,
                             @JsonProperty("property") Expression property,

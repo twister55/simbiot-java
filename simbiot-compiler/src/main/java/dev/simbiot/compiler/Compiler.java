@@ -1,13 +1,9 @@
 package dev.simbiot.compiler;
 
 import dev.simbiot.Component;
-import dev.simbiot.Props;
-import dev.simbiot.Slots;
-import dev.simbiot.Writer;
 import dev.simbiot.ast.Program;
 import dev.simbiot.compiler.bytecode.ArrayField;
-import dev.simbiot.compiler.handler.HandleResult;
-import dev.simbiot.compiler.handler.ProgramHandler;
+import dev.simbiot.compiler.program.ProgramHandler;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.modifier.FieldManifestation;
 import net.bytebuddy.description.modifier.Ownership;
@@ -18,8 +14,8 @@ import net.bytebuddy.implementation.FieldAccessor;
 import net.bytebuddy.implementation.Implementation;
 import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
-import static dev.simbiot.compiler.CompilerContext.COMPONENTS_FIELD_NAME;
-import static dev.simbiot.compiler.CompilerContext.CONSTANTS_FIELD_NAME;
+import static dev.simbiot.compiler.program.Dispatcher.COMPONENTS_FIELD_NAME;
+import static dev.simbiot.compiler.program.Dispatcher.CONSTANTS_FIELD_NAME;
 import static net.bytebuddy.description.type.TypeDescription.ForLoadedType.of;
 import static net.bytebuddy.matcher.ElementMatchers.named;
 
@@ -64,12 +60,10 @@ public class Compiler {
             public ByteCodeAppender appender(Target target) {
                 return (mv, ctx, method) -> {
                     context.fields(ctx.getInstrumentedType().getDeclaredFields());
-                    context.store("writer", Writer.class);
-                    context.store("props", Props.class);
-                    context.store("slots", Slots.class);
+                    context.parameters(method.getParameters());
 
                     return new ByteCodeAppender.Size(
-                        handle(context, program).apply(mv, ctx).getMaximalSize(),
+                        handler.handle(context, program).apply(mv, ctx).getMaximalSize(),
                         method.getStackSize() + context.getLocalVarsCount()
                     );
                 };
@@ -80,11 +74,5 @@ public class Compiler {
                 return type;
             }
         };
-    }
-
-    private StackManipulation handle(CompilerContext context, Program program) {
-        final HandleResult result = new HandleResult();
-        handler.handle(context, program, result);
-        return result.build();
     }
 }

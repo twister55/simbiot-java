@@ -11,6 +11,14 @@ import dev.simbiot.ast.expression.Identifier;
  */
 public class Property extends BaseProperty<Expression> {
 
+    public Property(String key, Expression value) {
+        this(new Identifier(key), value);
+    }
+
+    public Property(Identifier key, Expression value) {
+        this(Kind.INIT, key, value, false, false, false);
+    }
+
     @JsonCreator
     public Property(@JsonProperty("kind") Kind kind,
                     @JsonProperty("key") Identifier key,

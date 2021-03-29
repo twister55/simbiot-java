@@ -7,8 +7,7 @@ import java.util.List;
 import dev.simbiot.Component;
 import dev.simbiot.ComponentProvider;
 import dev.simbiot.ast.ProgramLoader;
-import dev.simbiot.compiler.handler.ExpressionsHandler;
-import dev.simbiot.compiler.handler.ProgramHandler;
+import dev.simbiot.compiler.program.ProgramHandler;
 import net.bytebuddy.dynamic.DynamicType.Unloaded;
 
 /**
@@ -17,12 +16,10 @@ import net.bytebuddy.dynamic.DynamicType.Unloaded;
 public class CompilingProvider implements ComponentProvider {
     private final ProgramLoader<?> loader;
     private final Compiler compiler;
-    private final ExpressionsHandler handler;
 
     public CompilingProvider(ProgramLoader<?> loader) {
         this.loader = loader;
         this.compiler = new Compiler(new ProgramHandler());
-        this.handler = new ExpressionsHandler();
     }
 
     @Override

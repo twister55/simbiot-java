@@ -1,1 +1,5 @@
-<div>inner component</div>
+<script>
+    export let text;
+</script>
+
+<div>{text}</div>

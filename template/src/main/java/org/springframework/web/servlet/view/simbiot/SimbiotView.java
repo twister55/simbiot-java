@@ -1,5 +1,6 @@
 package org.springframework.web.servlet.view.simbiot;
 
+import java.util.Collections;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -8,8 +9,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.web.servlet.view.AbstractTemplateView;
 
 import dev.simbiot.Component;
-import dev.simbiot.MapProps;
-import dev.simbiot.Slots;
 import dev.simbiot.StreamWriter;
 
 /**
@@ -32,7 +31,7 @@ public class SimbiotView extends AbstractTemplateView {
 
     private void render(Map<String, Object> model, HttpServletResponse response) throws Exception {
         final StreamWriter writer = new StreamWriter(response.getOutputStream());
-        this.component.render(writer, new MapProps(model), new Slots());
+        this.component.render(writer, model, Collections.emptyMap());
         writer.flush();
     }
 }

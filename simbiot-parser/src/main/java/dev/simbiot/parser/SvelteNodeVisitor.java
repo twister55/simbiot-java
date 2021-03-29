@@ -51,11 +51,10 @@ import dev.simbiot.runtime.HTML;
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class SvelteNodeVisitor implements Visitor {
+    private static long index = 0;
     private final List<Statement> target;
     private final Map<String, String> urls;
     private final StringBuilder current;
-
-    private int index;
 
     public SvelteNodeVisitor(List<Statement> target, Map<String, String> urls) {
         this.target = target;

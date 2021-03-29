@@ -6,13 +6,13 @@ import java.util.Map;
 
 import org.jetbrains.annotations.Nullable;
 
-import dev.simbiot.Runtime;
 import dev.simbiot.ast.NodeException;
 import dev.simbiot.ast.expression.CallExpression;
 import dev.simbiot.ast.expression.Expression;
 import dev.simbiot.ast.expression.Identifier;
 import dev.simbiot.ast.expression.Literal;
 import dev.simbiot.ast.expression.MemberExpression;
+import dev.simbiot.ast.expression.ObjectExpression;
 import dev.simbiot.ast.expression.UpdateExpression;
 import dev.simbiot.ast.expression.UpdateExpression.Operator;
 import dev.simbiot.ast.pattern.ObjectPattern;
@@ -45,6 +45,7 @@ import dev.simbiot.parser.template.TemplateNode;
 import dev.simbiot.parser.template.TemplateNode.Visitor;
 import dev.simbiot.parser.template.Text;
 import dev.simbiot.parser.template.Title;
+import dev.simbiot.runtime.HTML;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
@@ -90,7 +91,7 @@ public class SvelteNodeVisitor implements Visitor {
         if (indexName != null) {
             append(new VariableDeclaration(indexName, new Literal(0)));
         }
-        append(new VariableDeclaration(iteratorName, new CallExpression("iterator", block.getExpression())));
+        append(new VariableDeclaration(iteratorName, new CallExpression("@iterator", block.getExpression())));
         append(loop(block.getContext(), block.getChildren(), iteratorName, indexName));
     }
 
@@ -135,7 +136,7 @@ public class SvelteNodeVisitor implements Visitor {
 
     @Override
     public void visit(InlineComponent component) {
-        appendCall("component", new Literal(urls.get(component.getName())));
+        appendComponent(component.getName(), component.getProperties());
     }
 
     @Override
@@ -235,7 +236,7 @@ public class SvelteNodeVisitor implements Visitor {
         if (expression instanceof Literal) {
             String value = ((Literal) expression).getString();
             if (value != null && !value.isEmpty()) {
-                write(escape ? Runtime.escape(value) : value);
+                write(escape ? HTML.escape(value) : value);
             }
             return;
         }
@@ -244,7 +245,11 @@ public class SvelteNodeVisitor implements Visitor {
     }
 
     private void appendWrite(Expression expression, boolean escape) {
-        appendCall("write", expression, new Literal(escape));
+        appendCall("@write", expression, new Literal(escape));
+    }
+
+    private void appendComponent(String name, ObjectExpression properties) {
+        appendCall("@component", new Literal(urls.get(name)), properties);
     }
 
     private void appendCall(String callee, Expression... args) {

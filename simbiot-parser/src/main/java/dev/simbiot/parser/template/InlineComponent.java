@@ -6,7 +6,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import dev.simbiot.ast.NodeException;
+import dev.simbiot.ast.UnsupportedNodeException;
 import dev.simbiot.ast.expression.CallExpression;
 import dev.simbiot.ast.expression.Expression;
 import dev.simbiot.ast.expression.Literal;
@@ -63,6 +63,6 @@ public class InlineComponent extends Element {
             return ((MustacheTag) node).getExpression();
         }
 
-        throw new NodeException(node.getType() + " is not supported in component property");
+        throw new UnsupportedNodeException(node, "component property");
     }
 }

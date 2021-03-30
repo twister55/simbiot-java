@@ -1,8 +1,11 @@
 package dev.simbiot.parser;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -51,6 +54,7 @@ import dev.simbiot.runtime.HTML;
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class SvelteNodeVisitor implements Visitor {
+    private static final Set<String> SELF_CLOSING_TAGS = new HashSet<>(Arrays.asList("area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"));
     private static long index = 0;
     private final StringBuilder current;
     private final List<Statement> target;
@@ -103,34 +107,9 @@ public class SvelteNodeVisitor implements Visitor {
 
     @Override
     public void visit(Element element) {
-        write("<" + element.getName());
-
-        boolean hasClassAttr = false;
-        for (Attribute attribute : element.getAttributes()) {
-            if (attribute instanceof EventHandler) {
-                continue;
-            }
-
-            if ("class".equals(attribute.getName())) {
-                hasClassAttr = true;
-            }
-
-            write(" " + attribute.getName()  + "=\"");
-            for (TemplateNode v : attribute.getValue()) {
-                v.accept(this);
-            }
-            write("\"");
-        }
-
-        if (!hasClassAttr && hash != null) {
-            write(" class=\"svelte-" + hash + "\"");
-        }
-
-        write(">"); // TODO check if self closing
-        for (TemplateNode child : element.getChildren()) {
-            child.accept(this);
-        }
-        write("</" + element.getName() + ">");
+        writeElementStart(element.getName());
+        writeAttributes(element.getAttributes());
+        writeElementEnd(element.getName(), element.getChildren());
     }
 
     @Override
@@ -274,5 +253,48 @@ public class SvelteNodeVisitor implements Visitor {
     private void append(Statement statement) {
         flush();
         target.add(statement);
+    }
+
+    private void writeElementStart(String name) {
+        write("<" + name);
+    }
+
+    private void writeAttributes(Attribute[] attributes) {
+        boolean hasClassAttr = false;
+        for (Attribute attribute : attributes) {
+            if (attribute instanceof EventHandler) {
+                continue;
+            }
+
+            if ("class".equals(attribute.getName())) {
+                hasClassAttr = true;
+            }
+
+            write(" " + attribute.getName()  + "=\"");
+            for (TemplateNode v : attribute.getValue()) {
+                v.accept(this);
+            }
+            write("\"");
+        }
+
+        if (!hasClassAttr && hash != null) {
+            write(" class=\"svelte-" + hash + "\"");
+        }
+    }
+
+    private void writeElementEnd(String name, TemplateNode[] children) {
+        if (children.length == 0 && isSelfClosingTag(name)) {
+            write("/>");
+        } else {
+            write(">");
+            for (TemplateNode child : children) {
+                child.accept(this);
+            }
+            write("</" + name + ">");
+        }
+    }
+
+    private boolean isSelfClosingTag(String name) {
+        return SELF_CLOSING_TAGS.contains(name) || name.toLowerCase().equals("!doctype");
     }
 }

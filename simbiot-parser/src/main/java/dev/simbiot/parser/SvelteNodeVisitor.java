@@ -6,7 +6,7 @@ import java.util.Map;
 
 import org.jetbrains.annotations.Nullable;
 
-import dev.simbiot.ast.NodeException;
+import dev.simbiot.ast.UnsupportedNodeException;
 import dev.simbiot.ast.expression.CallExpression;
 import dev.simbiot.ast.expression.Expression;
 import dev.simbiot.ast.expression.Identifier;
@@ -52,14 +52,21 @@ import dev.simbiot.runtime.HTML;
  */
 public class SvelteNodeVisitor implements Visitor {
     private static long index = 0;
+    private final StringBuilder current;
     private final List<Statement> target;
     private final Map<String, String> urls;
-    private final StringBuilder current;
+    @Nullable
+    private final String hash;
 
-    public SvelteNodeVisitor(List<Statement> target, Map<String, String> urls) {
+    public SvelteNodeVisitor(List<Statement> target, Map<String, String> urls, @Nullable String hash) {
+        this.current = new StringBuilder();
         this.target = target;
         this.urls = urls;
-        this.current = new StringBuilder();
+        this.hash = hash;
+    }
+
+    private SvelteNodeVisitor(SvelteNodeVisitor parent, List<Statement> target) {
+        this(target, parent.urls, parent.hash);
     }
 
     public void accept(Fragment fragment) {
@@ -98,9 +105,14 @@ public class SvelteNodeVisitor implements Visitor {
     public void visit(Element element) {
         write("<" + element.getName());
 
+        boolean hasClassAttr = false;
         for (Attribute attribute : element.getAttributes()) {
             if (attribute instanceof EventHandler) {
                 continue;
+            }
+
+            if ("class".equals(attribute.getName())) {
+                hasClassAttr = true;
             }
 
             write(" " + attribute.getName()  + "=\"");
@@ -108,6 +120,10 @@ public class SvelteNodeVisitor implements Visitor {
                 v.accept(this);
             }
             write("\"");
+        }
+
+        if (!hasClassAttr && hash != null) {
+            write(" class=\"svelte-" + hash + "\"");
         }
 
         write(">"); // TODO check if self closing
@@ -182,7 +198,7 @@ public class SvelteNodeVisitor implements Visitor {
 
     private Statement inner(TemplateNode[] children) {
         final List<Statement> result = new ArrayList<>();
-        final SvelteNodeVisitor visitor = new SvelteNodeVisitor(result, urls);
+        final SvelteNodeVisitor visitor = new SvelteNodeVisitor(this, result);
         visitor.accept(new Fragment(children));
         return new BlockStatement(result);
     }
@@ -207,7 +223,7 @@ public class SvelteNodeVisitor implements Visitor {
                 ));
             }
         } else {
-            throw new NodeException(context.getType() + " is not supported in context of EachBlock");
+            throw new UnsupportedNodeException(context, "context of EachBlock");
         }
 
         Statement incrementIndex = Statement.EMPTY;

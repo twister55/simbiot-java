@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import dev.simbiot.parser.template.Fragment;
 import dev.simbiot.parser.template.Script;
+import dev.simbiot.parser.template.Style;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
@@ -18,13 +19,17 @@ public class SvelteAst {
     public final Script instance;
     @Nullable
     public final Script module;
+    @Nullable
+    public final Style css;
 
     @JsonCreator
     public SvelteAst(@Nullable @JsonProperty("html") Fragment html,
                      @Nullable @JsonProperty("instance") Script instance,
-                     @Nullable @JsonProperty("module") Script module) {
+                     @Nullable @JsonProperty("module") Script module,
+                     @Nullable @JsonProperty("css") Style css) {
         this.html = html;
         this.instance = instance;
         this.module = module;
+        this.css = css;
     }
 }

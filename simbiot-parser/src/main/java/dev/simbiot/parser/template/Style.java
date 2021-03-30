@@ -4,36 +4,31 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import dev.simbiot.ast.BaseNode;
-import dev.simbiot.ast.Node;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class Style extends BaseNode {
     private final Content content;
-    private final Attribute[] attributes;
-    private final Node[] children;
 
     @JsonCreator
-    public Style(@JsonProperty("content") Content content,
-                 @JsonProperty("attributes") Attribute[] attributes,
-                 @JsonProperty("children") Node[] children) {
+    public Style(@JsonProperty("content") Content content) {
         super("Style");
         this.content = content;
-        this.attributes = attributes;
-        this.children = children;
     }
 
     public Content getContent() {
         return content;
     }
 
-    public Attribute[] getAttributes() {
-        return attributes;
-    }
-
-    public Node[] getChildren() {
-        return children;
+    public String getHash() {
+        String str = content.getStyles().replace("/\r/g", "");
+        int hash = 5381;
+        int i = str.length();
+        while (i-- > 0) {
+            hash = ((hash << 5) - hash) ^ str.charAt(i);
+        }
+        return Integer.toString(hash, 36);
     }
 
     public static class Content {

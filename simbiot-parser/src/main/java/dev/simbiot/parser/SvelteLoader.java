@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jetbrains.annotations.Nullable;
+
 import dev.simbiot.ast.Program;
 import dev.simbiot.ast.ProgramLoader;
 import dev.simbiot.ast.SourceType;
@@ -43,7 +45,8 @@ public class SvelteLoader extends ProgramLoader<SvelteAst> {
         }
 
         if (ast.html != null) {
-            process(ast.html, result, urls);
+            String hash = ast.css != null ? ast.css.getHash() : null;
+            process(ast.html, result, urls, hash);
         }
 
         return new Program(SourceType.SCRIPT, result);
@@ -86,8 +89,8 @@ public class SvelteLoader extends ProgramLoader<SvelteAst> {
         });
     }
 
-    private void process(Fragment fragment, List<Statement> target, Map<String, String> urls) {
-        final SvelteNodeVisitor visitor = new SvelteNodeVisitor(target, urls);
+    private void process(Fragment fragment, List<Statement> target, Map<String, String> urls, @Nullable String hash) {
+        final SvelteNodeVisitor visitor = new SvelteNodeVisitor(target, urls, hash);
         visitor.accept(fragment);
     }
 

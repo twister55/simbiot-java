@@ -14,17 +14,11 @@ public abstract class ProgramLoader<T> {
     private final Class<T> type;
     private final ObjectMapper mapper;
 
-    private String prefix;
-    private String suffix;
-
     protected ProgramLoader(Class<T> type) {
         this.type = type;
         this.mapper = new ObjectMapper()
-                .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
-                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-
-        setPrefix("ast/components/");
-        setSuffix(".json");
+            .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     }
 
     protected abstract Program process(T value);
@@ -33,21 +27,13 @@ public abstract class ProgramLoader<T> {
         return process(readValue(id));
     }
 
-    public void setPrefix(String prefix) {
-        this.prefix = prefix;
-    }
-
-    public void setSuffix(String suffix) {
-        this.suffix = suffix;
-    }
-
     protected T readValue(String id) throws IOException {
         return mapper.readValue(getStream(id), type);
     }
 
     protected InputStream getStream(String id) {
         return getClass().getClassLoader().getResourceAsStream(
-            prefix + id.replace(".", "/") + suffix
+            "ast/components/" + id.replace(".", "/") + ".json"
         );
     }
 }

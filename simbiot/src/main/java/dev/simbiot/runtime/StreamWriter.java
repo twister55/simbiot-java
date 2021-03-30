@@ -1,12 +1,13 @@
-package dev.simbiot;
+package dev.simbiot.runtime;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class StreamWriter implements Writer {
+public class StreamWriter implements Writer, Closeable {
     private final OutputStream stream;
 
     public StreamWriter(OutputStream stream) {
@@ -21,11 +22,6 @@ public class StreamWriter implements Writer {
     @Override
     public void write(Object value) throws IOException {
         write(String.valueOf(value).getBytes());
-    }
-
-    @Override
-    public void flush() throws IOException {
-        stream.flush();
     }
 
     @Override

@@ -5,15 +5,22 @@ import org.springframework.web.servlet.view.AbstractTemplateViewResolver;
 import org.springframework.web.servlet.view.AbstractUrlBasedView;
 
 import dev.simbiot.ComponentProvider;
+import dev.simbiot.TemplateProvider;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class SimbiotViewResolver extends AbstractTemplateViewResolver implements ViewResolver {
-    private final ComponentProvider provider;
+    private final ComponentProvider componentProvider;
+    private final TemplateProvider templateProvider;
 
     public SimbiotViewResolver(ComponentProvider provider) {
-        this.provider = provider;
+        this(new TemplateProvider(), provider);
+    }
+
+    public SimbiotViewResolver(TemplateProvider templateProvider, ComponentProvider componentProvider) {
+        this.templateProvider = templateProvider;
+        this.componentProvider = componentProvider;
         setViewClass(SimbiotView.class);
     }
 
@@ -25,7 +32,8 @@ public class SimbiotViewResolver extends AbstractTemplateViewResolver implements
     @Override
     protected AbstractUrlBasedView buildView(String viewName) throws Exception {
         final SimbiotView view = (SimbiotView) super.buildView(viewName);
-        view.setViewComponent(provider.getComponent(viewName));
+        view.setComponent(componentProvider.getComponent(viewName));
+        view.setTemplate(templateProvider.getComponent("template.html"));
         return view;
     }
 }

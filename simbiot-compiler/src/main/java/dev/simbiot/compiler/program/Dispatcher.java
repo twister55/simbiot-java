@@ -121,6 +121,13 @@ public class Dispatcher {
 
             return new CallExpression(callee, WRITER, args[1], SLOTS);
         });
+        bindAlias("@slot", (ctx, args) -> {
+            final CallExpression slot = new CallExpression(
+                new MemberExpression(SLOTS, new Identifier(args.length == 2 ? "getOrDefault" : "get")), args
+            );
+
+            return new CallExpression(new MemberExpression(slot, new Identifier("render")));
+        });
     }
 
     private void bind(Class<?>... types) {

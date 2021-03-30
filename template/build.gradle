@@ -28,7 +28,7 @@ dependencies {
 
 task copy_client(type: Copy) {
     from "$buildDir/client"
-    into "$buildDir/resources/main/static/client"
+    into "$buildDir/resources/main/static"
 }
 
 task copy_ast(type: Copy) {

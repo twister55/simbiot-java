@@ -11,7 +11,7 @@ export default {
 		format: 'iife',
 		name: 'app',
 		dir: 'build',
-		entryFileNames: 'client/[name].js',
+		entryFileNames: 'client/app.js',
 		assetFileNames: '[name].json'
 	},
 	plugins: [
@@ -19,11 +19,12 @@ export default {
 			preprocess: true,
 			compilerOptions: {
 				format: 'cjs',
-				// enable run-time checks when not in production
+                hydratable: true,
+                // enable run-time checks when not in production
 				dev: !production
 			}
 		}),
-		css({ output: 'bundle.css' }),
+		css({ output: 'client/app.css' }),
 		resolve({
 			browser: true,
 			dedupe: ['svelte']

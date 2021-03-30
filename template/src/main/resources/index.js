@@ -2,9 +2,13 @@ import App from './components/App.svelte';
 
 const app = new App({
     target: document.body,
+    hydrate: true,
     props: {
-        name: 'world',
-        link: 'https://svelte.dev'
+        user: {
+            name: 'Vadim',
+            links: ['https://tt.me/vadim', 'https://ok.ru/vadim'],
+            access: true
+        }
     }
 });
 

@@ -7,6 +7,8 @@ import dev.simbiot.ast.pattern.Pattern;
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public abstract class BaseFunction extends BaseNode {
+    protected static final Pattern[] NO_ARGS = new Pattern[0];
+
     private final Pattern[] params;
     private final boolean generator;
     private final boolean async;

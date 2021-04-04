@@ -1,72 +1,78 @@
 package dev.simbiot.compiler;
 
-import dev.simbiot.Component;
-import dev.simbiot.ast.Program;
-import dev.simbiot.compiler.bytecode.ArrayField;
-import dev.simbiot.compiler.program.ProgramHandler;
+import dev.simbiot.ast.expression.CallExpression;
+import dev.simbiot.ast.expression.Expression;
+import dev.simbiot.ast.statement.BlockStatement;
+import dev.simbiot.ast.statement.ExpressionStatement;
+import dev.simbiot.ast.statement.IfStatement;
+import dev.simbiot.ast.statement.Statement;
+import dev.simbiot.ast.statement.StatementVisitor;
+import dev.simbiot.ast.statement.WhileStatement;
+import dev.simbiot.ast.statement.declaration.VariableDeclaration;
+import dev.simbiot.ast.statement.declaration.VariableDeclarator;
+import dev.simbiot.compiler.bytecode.GoTo;
+import dev.simbiot.compiler.bytecode.IfFalse;
+import dev.simbiot.compiler.bytecode.JumpTarget;
 import net.bytebuddy.ByteBuddy;
-import net.bytebuddy.description.modifier.FieldManifestation;
-import net.bytebuddy.description.modifier.Ownership;
-import net.bytebuddy.description.modifier.Visibility;
+import net.bytebuddy.description.method.ParameterDescription;
+import net.bytebuddy.description.method.ParameterList;
+import net.bytebuddy.description.type.TypeDescription.ForLoadedType;
+import net.bytebuddy.dynamic.DynamicType.Builder;
 import net.bytebuddy.dynamic.DynamicType.Unloaded;
 import net.bytebuddy.dynamic.scaffold.InstrumentedType;
-import net.bytebuddy.implementation.FieldAccessor;
+import net.bytebuddy.dynamic.scaffold.subclass.ConstructorStrategy;
 import net.bytebuddy.implementation.Implementation;
 import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
-import static dev.simbiot.compiler.program.Dispatcher.COMPONENTS_FIELD_NAME;
-import static dev.simbiot.compiler.program.Dispatcher.CONSTANTS_FIELD_NAME;
-import static net.bytebuddy.description.type.TypeDescription.ForLoadedType.of;
-import static net.bytebuddy.matcher.ElementMatchers.named;
+import net.bytebuddy.implementation.bytecode.member.MethodReturn;
+import net.bytebuddy.jar.asm.Label;
+import static net.bytebuddy.matcher.ElementMatchers.isAbstract;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class Compiler {
-    private final ProgramHandler handler;
+public abstract class Compiler {
+    private final ExpressionsResolver expressionsResolver;
 
-    public Compiler(ProgramHandler handler) {
-        this.handler = handler;
+    protected Compiler() {
+        this.expressionsResolver = new ExpressionsResolver();
     }
 
-    public Unloaded<Component> compile(CompilerContext context, Program program) {
-        return new ByteBuddy()
-            .subclass(Component.class)
-            .name(context.getId())
-            .defineField(CONSTANTS_FIELD_NAME, of(byte[][].class), Visibility.PRIVATE, FieldManifestation.FINAL, Ownership.STATIC)
-            .defineField(COMPONENTS_FIELD_NAME, of(Component[].class), Visibility.PRIVATE, FieldManifestation.PLAIN)
-            .defineConstructor(Visibility.PUBLIC)
-            .withParameters(Component[].class)
-            .intercept(FieldAccessor.ofField(COMPONENTS_FIELD_NAME).setsArgumentAt(0))
-            .method(named("render"))
-            .intercept(renderMethod(context, program))
-            .initializer(staticInitializer(context))
+    protected Compiler(ExpressionsResolver expressionsResolver) {
+        this.expressionsResolver = expressionsResolver;
+    }
+
+    protected <T> Unloaded<T> compile(CompilerContext ctx, Class<T> type, Statement... statements) {
+        final Builder<T> builder = createBuilder(ctx, type);
+        final ParameterList<ParameterDescription.InDefinedShape> parameters = new ForLoadedType(type)
+            .getDeclaredMethods()
+            .filter(isAbstract())
+            .getOnly()
+            .getParameters();
+
+        ctx.init(builder.toTypeDescription(), parameters);
+
+        return builder
+            .method(isAbstract())
+            .intercept(methodImplementation(ctx, implement(ctx, statements)))
+            .declaredTypes(ctx.getDeclaredTypes())
             .make();
     }
 
-    private ByteCodeAppender staticInitializer(CompilerContext context) {
-        return (visitor, ctx, method) -> {
-            final StackManipulation.Size size = new ArrayField(
-                ctx.getInstrumentedType(), CONSTANTS_FIELD_NAME, context.getConstants()
-            ).apply(visitor, ctx);
-
-            return new ByteCodeAppender.Size(size.getMaximalSize(), method.getStackSize());
-        };
+    protected <T> Builder<T> createBuilder(CompilerContext ctx, Class<T> type) {
+        return new ByteBuddy()
+            .subclass(type, ConstructorStrategy.Default.NO_CONSTRUCTORS)
+            .name(ctx.getId());
     }
 
-    private Implementation renderMethod(CompilerContext context, Program program) {
+    private Implementation methodImplementation(CompilerContext ctx, Chunk result) {
         return new Implementation() {
             @Override
             public ByteCodeAppender appender(Target target) {
-                return (mv, ctx, method) -> {
-                    context.fields(ctx.getInstrumentedType().getDeclaredFields());
-                    context.parameters(method.getParameters());
-
-                    return new ByteCodeAppender.Size(
-                        handler.handle(context, program).apply(mv, ctx).getMaximalSize(),
-                        method.getStackSize() + context.getLocalVarsCount()
-                    );
-                };
+                return (methodVisitor, implementationContext, methodDescription) -> new ByteCodeAppender.Size(
+                    result.result().apply(methodVisitor, implementationContext).getMaximalSize(),
+                    methodDescription.getStackSize() + ctx.getLocalVarsCount()
+                );
             }
 
             @Override
@@ -74,5 +80,90 @@ public class Compiler {
                 return type;
             }
         };
+    }
+
+    private Chunk implement(CompilerContext ctx, Statement... statements) {
+        final Chunk result = new Chunk();
+        for (Statement statement : statements) {
+            implement(ctx, statement, result);
+        }
+        result.append(MethodReturn.VOID);
+        return result;
+    }
+
+    private void implement(CompilerContext ctx, Statement statement, Chunk result) {
+        statement.accept(new Visitor(ctx, result));
+    }
+
+    private class Visitor extends StatementVisitor {
+        private final CompilerContext ctx;
+        private final Chunk result;
+
+        private Visitor(CompilerContext ctx, Chunk result) {
+            this.ctx = ctx;
+            this.result = result;
+        }
+
+        @Override
+        public void visit(BlockStatement statement) {
+            statement.forEach(this::append);
+        }
+
+        @Override
+        public void visit(VariableDeclaration statement) {
+            for (VariableDeclarator declarator : statement.getDeclarations()) {
+                append(ctx.store(declarator.getId().getName(), expressionsResolver.resolve(ctx, declarator.getInit())));
+            }
+        }
+
+        @Override
+        public void visit(ExpressionStatement statement) {
+            append(statement.getExpression());
+        }
+
+        @Override
+        public void visit(IfStatement statement) {
+            final Label ifLabel = new Label();
+            final Label elseLabel = new Label();
+
+            append(statement.getTest());
+            append(new CallExpression("@is"));
+            append(new IfFalse(ifLabel));
+            append(statement.getConsequent());
+
+            if (statement.getAlternate() == null) {
+                append(new JumpTarget(ifLabel));
+            } else {
+                append(new GoTo(elseLabel));
+                append(new JumpTarget(ifLabel));
+                append(statement.getAlternate());
+                append(new JumpTarget(elseLabel));
+            }
+        }
+
+        @Override
+        public void visit(WhileStatement statement) {
+            final Label loopStart = new Label();
+            final Label loopEnd = new Label();
+
+            append(new JumpTarget(loopStart));
+            append(statement.getTest());
+            append(new IfFalse(loopEnd));
+            append(statement.getBody());
+            append(new GoTo(loopStart));
+            append(new JumpTarget(loopEnd));
+        }
+
+        private void append(Statement statement) {
+            implement(ctx, statement, result);
+        }
+
+        private void append(Expression expression) {
+            result.append(expressionsResolver.resolve(ctx, expression));
+        }
+
+        private void append(StackManipulation manipulation) {
+            result.append(manipulation);
+        }
     }
 }

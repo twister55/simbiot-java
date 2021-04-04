@@ -1,4 +1,4 @@
-package dev.simbiot.compiler.program;
+package dev.simbiot.compiler;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -6,18 +6,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 import dev.simbiot.ast.expression.CallExpression;
 import dev.simbiot.ast.expression.Expression;
 import dev.simbiot.ast.expression.Identifier;
 import dev.simbiot.ast.expression.Literal;
 import dev.simbiot.ast.expression.MemberExpression;
-import dev.simbiot.compiler.CompilerContext;
 import dev.simbiot.runtime.HTML;
 import dev.simbiot.runtime.Objects;
+import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.description.method.MethodDescription.ForLoadedMethod;
 import net.bytebuddy.description.method.MethodDescription.InGenericShape;
 import net.bytebuddy.description.method.MethodList;
+import net.bytebuddy.implementation.bytecode.StackManipulation;
+import net.bytebuddy.implementation.bytecode.member.MethodInvocation;
+import static net.bytebuddy.description.type.TypeDescription.ForLoadedType.of;
+import static net.bytebuddy.implementation.bytecode.collection.ArrayFactory.forType;
 import static net.bytebuddy.matcher.ElementMatchers.named;
 import static net.bytebuddy.matcher.ElementMatchers.takesArgument;
 import static net.bytebuddy.matcher.ElementMatchers.takesArguments;
@@ -26,19 +31,20 @@ import static net.bytebuddy.matcher.ElementMatchers.takesArguments;
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class Dispatcher {
-    public static final String CONSTANTS_FIELD_NAME = "$$CONSTANTS";
-    public static final String COMPONENTS_FIELD_NAME = "$$components";
+    public static final String CONSTANTS_FIELD_NAME = "CONSTANTS";
+    public static final String COMPONENTS_FIELD_NAME = "components";
 
-    public static final Expression WRITER = new MemberExpression("arguments", 0);
+    public static final Expression WRITER = new Identifier("@writer");
     public static final Expression WRITER_WRITE = new MemberExpression(WRITER, new Identifier("write"));
-    public static final Expression PROPS = new MemberExpression("arguments", 1);
-    public static final Expression SLOTS = new MemberExpression("arguments", 2);
+    public static final Expression PROPS = new Identifier("@props");
+    public static final Expression SLOTS = new Identifier("@slots");
+    public static final Expression GET_SLOT = new MemberExpression(SLOTS, new Identifier("getOrDefault"));
 
-    private final Executor executor;
+    private final ExpressionsResolver expressionsResolver;
     private final Map<String, CallHandler> mapping;
 
-    public Dispatcher(Executor executor) {
-        this.executor = executor;
+    public Dispatcher(ExpressionsResolver expressionsResolver) {
+        this.expressionsResolver = expressionsResolver;
         this.mapping = new HashMap<>();
         bindAliases();
         bind(HTML.class, Objects.class);
@@ -68,33 +74,49 @@ public class Dispatcher {
     }
 
     private Chunk dispatch(CompilerContext ctx, MemberExpression callee, Expression[] args) {
-        final Chunk result = executor.execute(ctx, callee.getObject());
+        final Chunk result = expressionsResolver.resolve(ctx, callee.getObject());
         final Identifier methodId = (Identifier) callee.getProperty();
-        final List<Chunk> arguments = executor.execute(ctx, args);
+        final List<Chunk> arguments = expressionsResolver.resolve(ctx, args);
         final MethodList<InGenericShape> methods = result.type()
             .getDeclaredMethods()
             .filter(named(methodId.getName()));
 
         if (methods.size() == 1) {
-            return result.invoke(methods.getOnly(), arguments);
+            return invoke(result, methods.getOnly(), arguments);
         }
 
         MethodList<InGenericShape> filtered = methods.filter(takesArguments(args.length));
         if (filtered.size() == 1) {
-            return result.invoke(methods.getOnly(), arguments);
+            return invoke(result, methods.getOnly(), arguments);
         }
 
         filtered = methods.filter(takesArgument(0, arguments.get(0).type().asErasure()));
         if (filtered.size() == 1) {
-            return result.invoke(filtered.getOnly(), arguments);
+            return invoke(result, filtered.getOnly(), arguments);
         }
 
         filtered = methods.filter(takesArgument(0, Object.class));
         if (filtered.size() == 1) {
-            return result.invoke(filtered.getOnly(), arguments);
+            return invoke(result, filtered.getOnly(), arguments);
         }
 
         throw new IllegalStateException("method " + methodId.getName() + " can not be resolved");
+    }
+
+    private Chunk invoke(Chunk callee, MethodDescription method, List<Chunk> args) {
+        List<StackManipulation> arguments = args.stream()
+            .map(Chunk::result)
+            .collect(Collectors.toList());
+
+        if (method.isVarArgs()) {
+            callee.append(forType(of(Object.class).asGenericType()).withValues(arguments));
+        } else {
+            for (StackManipulation argument : arguments) {
+                callee.append(argument);
+            }
+        }
+
+        return callee.append(MethodInvocation.invoke(method), method.getReturnType());
     }
 
     private void bindAliases() {
@@ -107,7 +129,7 @@ public class Dispatcher {
 
             if (value instanceof Literal && !escape.isTrue()) {
                 final int idx = ctx.addConstant(((Literal) value).getString());
-                return new CallExpression(WRITER_WRITE, new MemberExpression(CONSTANTS_FIELD_NAME, idx));
+                return new CallExpression(WRITER_WRITE, new MemberExpression("@" + CONSTANTS_FIELD_NAME, idx));
             }
 
             return new CallExpression(WRITER_WRITE, escape.isTrue() ? new CallExpression("@escape", value) : value);
@@ -115,19 +137,15 @@ public class Dispatcher {
         bindAlias("@component", (ctx, args) -> {
             final int idx = ctx.addComponentId(((Literal) args[0]).getString());
             final MemberExpression callee = new MemberExpression(
-                new MemberExpression(COMPONENTS_FIELD_NAME, idx),
+                new MemberExpression("@" + COMPONENTS_FIELD_NAME, idx),
                 new Identifier("render")
             );
 
-            return new CallExpression(callee, WRITER, args[1], SLOTS);
+            return new CallExpression(callee, WRITER, args[1], args[2]);
         });
-        bindAlias("@slot", (ctx, args) -> {
-            final CallExpression slot = new CallExpression(
-                new MemberExpression(SLOTS, new Identifier(args.length == 2 ? "getOrDefault" : "get")), args
-            );
-
-            return new CallExpression(new MemberExpression(slot, new Identifier("render")));
-        });
+        bindAlias("@slot", (ctx, args) -> new CallExpression(
+            new MemberExpression(new CallExpression(GET_SLOT, args), new Identifier("render"))
+        ));
     }
 
     private void bind(Class<?>... types) {
@@ -136,7 +154,7 @@ public class Dispatcher {
                 if (Modifier.isStatic(method.getModifiers())) {
                     mapping.put(
                         "@" + method.getName(),
-                        (ctx, args) -> new Chunk().invoke(new ForLoadedMethod(method), executor.execute(ctx, args))
+                        (ctx, args) -> invoke(new Chunk(), new ForLoadedMethod(method), expressionsResolver.resolve(ctx, args))
                     );
                 }
             }

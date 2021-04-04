@@ -3,29 +3,54 @@ package dev.simbiot.compiler;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import dev.simbiot.Component;
 import dev.simbiot.ComponentProvider;
+import dev.simbiot.ast.Program;
 import dev.simbiot.ast.ProgramLoader;
-import dev.simbiot.compiler.program.ProgramHandler;
 import net.bytebuddy.dynamic.DynamicType.Unloaded;
+import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
+import net.bytebuddy.dynamic.loading.InjectionClassLoader;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class CompilingProvider implements ComponentProvider {
+public class CompilingProvider extends Compiler implements ComponentProvider {
+    private final ComponentCompiler compiler;
     private final ProgramLoader<?> loader;
-    private final Compiler compiler;
+    private final Map<String, Component> cache;
 
     public CompilingProvider(ProgramLoader<?> loader) {
+        this(loader, new ComponentCompiler());
+    }
+
+    public CompilingProvider(ProgramLoader<?> loader, ComponentCompiler compiler) {
+        this.compiler = compiler;
         this.loader = loader;
-        this.compiler = new Compiler(new ProgramHandler());
+        this.cache = new ConcurrentHashMap<>();
     }
 
     @Override
     public Component getComponent(String id) throws IOException {
+        try {
+            return this.cache.computeIfAbsent(id, this::createComponent);
+        } catch (RuntimeException e) {
+            if (e.getCause() instanceof IOException) {
+                throw (IOException) e.getCause();
+            }
+            throw e;
+        }
+    }
+
+    private Component createComponent(String id) {
         final CompilerContext context = new CompilerContext(id);
-        return createInstance(loadClass(context), getDependencies(context));
+        try {
+            return createInstance(loadClass(context), getDependencies(context));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private Component createInstance(Class<? extends Component> type, Component[] dependencies) {
@@ -48,18 +73,36 @@ public class CompilingProvider implements ComponentProvider {
     }
 
     private Class<? extends Component> loadClass(CompilerContext context) throws IOException {
-        return compileAndSave(context)
-            .load(Component.class.getClassLoader())
-            .getLoaded();
+        final Unloaded<Component> unloaded = compileAndSave(context, loader.load(context.getId()));
+        final ClassLoader classLoader = Component.class.getClassLoader();
+
+        if (context.getInlineTypes().isEmpty()) {
+            return unloaded
+                .load(classLoader, ClassLoadingStrategy.Default.INJECTION)
+                .getLoaded();
+        } else {
+            final Class<? extends Component> loaded = unloaded
+                .load(classLoader, ClassLoadingStrategy.Default.CHILD_FIRST.opened())
+                .getLoaded();
+
+            for (Unloaded<?> inlineType : context.getInlineTypes()) {
+                inlineType.load((InjectionClassLoader) loaded.getClassLoader(), ClassLoadingStrategy.Default.INJECTION);
+            }
+
+            return loaded;
+        }
     }
 
-    private Unloaded<Component> compileAndSave(CompilerContext context) throws IOException {
-        final Unloaded<Component> unloaded = compile(context);
+    private Unloaded<Component> compileAndSave(CompilerContext context, Program program) throws IOException {
+        final Unloaded<Component> unloaded = compile(context, program);
         unloaded.saveIn(new File("generated"));
+        for (Unloaded<?> inlineType : context.getInlineTypes()) {
+            inlineType.saveIn(new File("generated"));
+        }
         return unloaded;
     }
 
-    private Unloaded<Component> compile(CompilerContext context) throws IOException {
-        return compiler.compile(context, loader.load(context.getId()));
+    private Unloaded<Component> compile(CompilerContext context, Program program) {
+        return compiler.compile(context, program);
     }
 }

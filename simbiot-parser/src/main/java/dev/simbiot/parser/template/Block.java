@@ -20,8 +20,11 @@ public abstract class Block extends BaseNode implements TemplateNode {
         }
     }
 
+    public boolean hasChildren() {
+        return children.length > 0;
+    }
+
     public TemplateNode[] getChildren() {
         return children;
     }
-
 }

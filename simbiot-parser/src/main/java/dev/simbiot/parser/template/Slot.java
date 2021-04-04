@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class Slot extends Element {
+    public static final String DEFAULT_KEY = "__default__";
 
     @JsonCreator
     public Slot(@JsonProperty("name") String name,

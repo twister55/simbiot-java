@@ -5,11 +5,13 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
 
 import dev.simbiot.ast.UnsupportedNodeException;
+import dev.simbiot.ast.expression.ArrowFunctionExpression;
 import dev.simbiot.ast.expression.CallExpression;
 import dev.simbiot.ast.expression.Expression;
 import dev.simbiot.ast.expression.Identifier;
@@ -130,7 +132,28 @@ public class SvelteNodeVisitor implements Visitor {
 
     @Override
     public void visit(InlineComponent component) {
-        appendComponent(component.getName(), component.getProperties());
+        final List<Property> slots = new ArrayList<>();
+        final List<TemplateNode> defaultSlotNodes = new ArrayList<>();
+
+        for (TemplateNode child : component.getChildren()) {
+            if (child instanceof Element) {
+                final Optional<String> slotId = getSlotName((Element) child, "slot");
+
+                if (slotId.isPresent()) {
+                    slots.add(new Property(slotId.get(), new ArrowFunctionExpression(inner(child))));
+                    continue;
+                }
+            }
+
+            defaultSlotNodes.add(child);
+        }
+
+        if (!defaultSlotNodes.isEmpty()) {
+            final Statement body = inner(defaultSlotNodes.toArray(new TemplateNode[0]));
+            slots.add(new Property(new Identifier(Slot.DEFAULT_KEY), new ArrowFunctionExpression(body)));
+        }
+
+        appendComponent(component.getName(), component.getProperties(), new ObjectExpression(slots));
     }
 
     @Override
@@ -150,7 +173,12 @@ public class SvelteNodeVisitor implements Visitor {
 
     @Override
     public void visit(Slot slot) {
+        final Expression key = new Literal(getSlotName(slot, "name").orElse(Slot.DEFAULT_KEY));
+        final Expression value = slot.hasChildren() ?
+            new ArrowFunctionExpression(inner(slot.getChildren())) :
+            new Identifier("@empty-slot");
 
+        appendCall("@slot", key, value);
     }
 
     @Override
@@ -175,7 +203,7 @@ public class SvelteNodeVisitor implements Visitor {
         }
     }
 
-    private Statement inner(TemplateNode[] children) {
+    private Statement inner(TemplateNode... children) {
         final List<Statement> result = new ArrayList<>();
         final SvelteNodeVisitor visitor = new SvelteNodeVisitor(this, result);
         visitor.accept(new Fragment(children));
@@ -242,8 +270,8 @@ public class SvelteNodeVisitor implements Visitor {
         appendCall("@write", expression, new Literal(escape));
     }
 
-    private void appendComponent(String name, ObjectExpression properties) {
-        appendCall("@component", new Literal(urls.get(name)), properties);
+    private void appendComponent(String name, ObjectExpression properties, ObjectExpression slots) {
+        appendCall("@component", new Literal(urls.get(name)), properties, slots);
     }
 
     private void appendCall(String callee, Expression... args) {
@@ -296,5 +324,21 @@ public class SvelteNodeVisitor implements Visitor {
 
     private boolean isSelfClosingTag(String name) {
         return SELF_CLOSING_TAGS.contains(name) || name.toLowerCase().equals("!doctype");
+    }
+
+    private Optional<String> getSlotName(Element element, String attrName) {
+        return Arrays.stream(element.getAttributes())
+            .filter(attribute -> attrName.equals(attribute.getName()))
+            .map(attribute -> {
+                final TemplateNode[] nodes = attribute.getValue();
+
+                if (nodes.length != 1 || !(nodes[0] instanceof Text)) {
+                    throw new IllegalArgumentException("name of slot expected to be a single text node (" + Arrays.toString(nodes) + " was provided)");
+                }
+
+                return (Text) nodes[0];
+            })
+            .map(Text::getData)
+            .findFirst();
     }
 }

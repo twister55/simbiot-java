@@ -1,0 +1,8 @@
+group 'dev.svelte'
+version '0.0.1'
+
+dependencies {
+    compileOnly project(':simbiot')
+    compileOnly group: 'javax.servlet', name: 'javax.servlet-api', version: '4.0.1'
+    compileOnly group: 'org.springframework', name: 'spring-webmvc', version: '5.0.6.RELEASE'
+}

@@ -1,4 +1,4 @@
-package template;
+package app.simbiot;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

@@ -1,4 +1,4 @@
-package template;
+package app.simbiot;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -21,6 +21,7 @@ public class ViewController {
     public ModelAndView index() {
         return new ModelAndView("App")
             .addObject("user", createUser())
+            .addObject("access", true)
             .addObject("items", Arrays.asList(1, 2, 3, 4, 5));
     }
 
@@ -28,7 +29,7 @@ public class ViewController {
         final User user = new User();
         user.name = "Vadim";
         user.links = asList("https://tt.me/vadim", "https://ok.ru/vadim");
-        user.access = true;
+        user.address = "1428 Elm Street";
         return user;
     }
 
@@ -36,13 +37,13 @@ public class ViewController {
         Map<String, Object> user = new HashMap<>();
         user.put("name", "Vadim");
         user.put("links", asList("https://tt.me/vadim", "https://ok.ru/vadim"));
-        user.put("access", true);
+        user.put("address", "1428 Elm Street");
         return user;
     }
 
     public static class User {
         public String name;
         public List<String> links;
-        public boolean access;
+        public String address;
     }
 }

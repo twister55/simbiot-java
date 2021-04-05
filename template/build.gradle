@@ -17,6 +17,7 @@ dependencies {
     compile project(':simbiot')
     compile project(':simbiot-parser')
     compile project(':simbiot-compiler')
+    compile project(':simbiot-spring-view')
 
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.12.1'
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.0'

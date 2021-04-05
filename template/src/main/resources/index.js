@@ -7,8 +7,9 @@ const app = new App({
         user: {
             name: 'Vadim',
             links: ['https://tt.me/vadim', 'https://ok.ru/vadim'],
-            access: true
-        }
+            address: '1428 Elm Street'
+        },
+        access: true
     }
 });
 

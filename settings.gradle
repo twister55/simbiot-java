@@ -3,6 +3,9 @@ rootProject.name = 'simbiot-java'
 include 'simbiot'
 include 'simbiot-ast'
 include 'simbiot-compiler'
-include 'simbiot-parser'
+
 include 'simbiot-spring-view'
-include 'template'
+
+include 'simbiot-svelte'
+include 'examples:svelte'
+

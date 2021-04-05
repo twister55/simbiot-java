@@ -29,7 +29,7 @@ import static net.bytebuddy.matcher.ElementMatchers.takesArguments;
  */
 public class CompilerContext {
     private final String id;
-    private final Map<String, Integer> refs;
+    private final Map<String, Chunk> refs;
     private final Map<String, Generic> types;
     private final List<StackManipulation> constants;
     private final List<String> componentIds;
@@ -37,6 +37,7 @@ public class CompilerContext {
 
     private TypeDescription type;
     private ParameterList<?> parameters;
+    private int localVarsCount;
     private int offset;
 
     public CompilerContext(String id) {
@@ -73,7 +74,7 @@ public class CompilerContext {
     }
 
     public int getLocalVarsCount() {
-        return refs.size();
+        return localVarsCount;
     }
 
     public Chunk writer() {
@@ -96,11 +97,12 @@ public class CompilerContext {
         }
     }
 
-    public StackManipulation store(String name, Chunk result) {
+    public StackManipulation store(String name, Chunk value) {
         final int ref = ++offset;
-        types.put(name, result.type());
-        refs.put(name, ref);
-        return new Compound(result.result(), REFERENCE.storeAt(ref));
+        localVarsCount++;
+        types.put(name, value.type());
+        refs.put(name, Chunk.of(REFERENCE.loadFrom(offset), types.get(name)));
+        return new Compound(value.result(), REFERENCE.storeAt(ref));
     }
 
     public List<StackManipulation> getConstants() {
@@ -153,13 +155,7 @@ public class CompilerContext {
     }
 
     protected Chunk ref(String name) {
-        final Integer offset = refs.get(name);
-
-        if (offset == null) {
-            return Chunk.NULL;
-        }
-
-        return Chunk.of(REFERENCE.loadFrom(offset), types.get(name));
+        return refs.getOrDefault(name, Chunk.NULL);
     }
 
     protected Chunk field(String name) {

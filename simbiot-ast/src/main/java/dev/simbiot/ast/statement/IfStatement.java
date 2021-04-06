@@ -16,6 +16,10 @@ public class IfStatement extends BaseNode implements Statement {
     private final Statement consequent;
     private final Statement alternate;
 
+    public IfStatement(Expression test, Statement consequent) {
+        this(test, consequent, null);
+    }
+
     @JsonCreator
     public IfStatement(@JsonProperty("test") Expression test,
                        @JsonProperty("consequent") Statement consequent,

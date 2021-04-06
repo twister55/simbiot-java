@@ -1,0 +1,7 @@
+dependencies {
+    compile project(':simbiot')
+    compile project(':simbiot-ast')
+    compile project(':simbiot-compiler')
+
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.0'
+}

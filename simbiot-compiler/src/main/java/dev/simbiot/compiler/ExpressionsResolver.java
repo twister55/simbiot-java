@@ -45,15 +45,19 @@ public class ExpressionsResolver {
 
     public Chunk resolve(CompilerContext ctx, Expression expression) {
         final Chunk result = new Chunk();
-        expression.accept(new Visitor(ctx, result));
+        expression.accept(createVisitor(ctx, result));
         return result;
     }
 
-    private class Visitor extends ExpressionVisitor {
+    protected ExpressionVisitor createVisitor(CompilerContext ctx, Chunk result) {
+        return new Visitor(ctx, result);
+    }
+
+    protected class Visitor extends ExpressionVisitor {
         private final CompilerContext ctx;
         private final Chunk result;
 
-        private Visitor(CompilerContext ctx, Chunk result) {
+        public Visitor(CompilerContext ctx, Chunk result) {
             this.ctx = ctx;
             this.result = result;
         }

@@ -9,3 +9,6 @@ include 'simbiot-spring-view'
 include 'simbiot-svelte'
 include 'examples:svelte'
 
+include 'simbiot-endorphin'
+include 'examples:endorphin'
+

@@ -1,0 +1,38 @@
+
+<template>
+    <div ref:container></div>
+	<main id="app" class="foo" class:hasUser={user}>
+        <e:attribute class="abc" data-value={user.name} data-text="raw text value" />
+        <e:switch>
+            <e:case test={user.name}>
+                <div>Hello, {user.name}</div>
+            </e:case>
+            <e:case test={access}>
+                <div>Hello, user</div>
+            </e:case>
+            <e:default>
+                <div>Access denied</div>
+            </e:default>
+        </e:switch>
+
+        <e:for-each select={user.links}>
+            <a href={@value}>{@value}</a>
+        </e:for-each>
+
+        {{user.name}}
+    </main>
+</template>
+
+<style>
+    .foo {
+        font-size: 12px;
+        }
+
+    .access {
+        font-size: 13px;
+        }
+
+    .hasUser {
+        font-size: 14px;
+        }
+</style>

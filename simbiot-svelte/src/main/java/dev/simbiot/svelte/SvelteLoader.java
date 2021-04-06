@@ -36,7 +36,7 @@ public class SvelteLoader extends ProgramLoader<SvelteAst> {
     }
 
     @Override
-    protected Program process(SvelteAst ast) {
+    protected Program process(String id, SvelteAst ast) {
         final List<Statement> result = new ArrayList<>();
         final Map<String, String> urls = new HashMap<>();
 

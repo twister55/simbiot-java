@@ -17,13 +17,13 @@ import net.bytebuddy.dynamic.loading.InjectionClassLoader;
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class CompilingProvider extends Compiler implements ComponentProvider {
+public class CompilingProvider implements ComponentProvider {
     private final ComponentCompiler compiler;
     private final ProgramLoader<?> loader;
     private final Map<String, Component> cache;
 
     public CompilingProvider(ProgramLoader<?> loader) {
-        this(loader, new ComponentCompiler());
+        this(loader, new ComponentCompiler(new ExpressionsResolver()));
     }
 
     public CompilingProvider(ProgramLoader<?> loader, ComponentCompiler compiler) {

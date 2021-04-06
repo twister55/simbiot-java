@@ -21,6 +21,10 @@ import static net.bytebuddy.matcher.ElementMatchers.named;
  */
 public class ComponentCompiler extends Compiler {
 
+    public ComponentCompiler(ExpressionsResolver expressionsResolver) {
+        super(expressionsResolver);
+    }
+
     public DynamicType.Unloaded<Component> compile(CompilerContext ctx, Program program) {
         return compile(ctx, Component.class, program.getBody());
     }

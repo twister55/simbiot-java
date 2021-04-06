@@ -5,6 +5,7 @@ import java.io.InputStream;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -21,14 +22,18 @@ public abstract class ProgramLoader<T> {
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     }
 
-    protected abstract Program process(T value);
+    protected abstract Program process(String id, T value);
 
     public Program load(String id) throws IOException {
-        return process(readValue(id));
+        return process(id, readValue(id));
     }
 
     protected T readValue(String id) throws IOException {
         return mapper.readValue(getStream(id), type);
+    }
+
+    protected void registerModule(Module module) {
+        mapper.registerModule(module);
     }
 
     protected InputStream getStream(String id) {

@@ -34,10 +34,6 @@ import static net.bytebuddy.matcher.ElementMatchers.isAbstract;
 public abstract class Compiler {
     private final ExpressionsResolver expressionsResolver;
 
-    protected Compiler() {
-        this.expressionsResolver = new ExpressionsResolver();
-    }
-
     protected Compiler(ExpressionsResolver expressionsResolver) {
         this.expressionsResolver = expressionsResolver;
     }
@@ -62,7 +58,7 @@ public abstract class Compiler {
     protected <T> Builder<T> createBuilder(CompilerContext ctx, Class<T> type) {
         return new ByteBuddy()
             .subclass(type, ConstructorStrategy.Default.NO_CONSTRUCTORS)
-            .name(ctx.getId());
+            .name(ctx.getId().replace("-", "_"));
     }
 
     private Implementation methodImplementation(CompilerContext ctx, Chunk result) {

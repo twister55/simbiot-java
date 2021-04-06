@@ -66,7 +66,7 @@ public class EndorphinNodeVisitor implements Visitor {
         this.hash = hash;
         this.current = new StringBuilder();
         this.target = target;
-        this.urls = new HashMap<>();;
+        this.urls = new HashMap<>();
     }
 
     private EndorphinNodeVisitor(EndorphinNodeVisitor parent, List<Statement> target) {

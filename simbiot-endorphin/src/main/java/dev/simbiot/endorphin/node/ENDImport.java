@@ -8,13 +8,13 @@ import dev.simbiot.ast.BaseNode;
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class Import extends BaseNode {
+public class ENDImport extends BaseNode implements TemplateNode {
     private final String name;
     private final String href;
 
     @JsonCreator
-    public Import(@JsonProperty("name") String name,
-                  @JsonProperty("href") String href) {
+    public ENDImport(@JsonProperty("name") String name,
+                     @JsonProperty("href") String href) {
         super("ENDImport");
         this.name = name;
         this.href = href;
@@ -26,5 +26,10 @@ public class Import extends BaseNode {
 
     public String getHref() {
         return href;
+    }
+
+    @Override
+    public void accept(Visitor visitor) {
+        visitor.visit(this);
     }
 }

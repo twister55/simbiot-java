@@ -2,19 +2,24 @@ package dev.simbiot.endorphin;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import dev.simbiot.ast.Program;
 import dev.simbiot.ast.UnsupportedNodeException;
+import dev.simbiot.ast.expression.ArrowFunctionExpression;
 import dev.simbiot.ast.expression.CallExpression;
 import dev.simbiot.ast.expression.ConditionalExpression;
 import dev.simbiot.ast.expression.Expression;
 import dev.simbiot.ast.expression.Identifier;
 import dev.simbiot.ast.expression.Literal;
 import dev.simbiot.ast.expression.ObjectExpression;
+import dev.simbiot.ast.pattern.Property;
 import dev.simbiot.ast.statement.BlockStatement;
 import dev.simbiot.ast.statement.ExpressionStatement;
 import dev.simbiot.ast.statement.IfStatement;
@@ -30,6 +35,7 @@ import dev.simbiot.endorphin.node.ENDChooseStatement;
 import dev.simbiot.endorphin.node.ENDElement;
 import dev.simbiot.endorphin.node.ENDForEachStatement;
 import dev.simbiot.endorphin.node.ENDIfStatement;
+import dev.simbiot.endorphin.node.ENDImport;
 import dev.simbiot.endorphin.node.ENDInnerHTML;
 import dev.simbiot.endorphin.node.ENDLiteral;
 import dev.simbiot.endorphin.node.ENDProgram;
@@ -45,47 +51,59 @@ import dev.simbiot.runtime.HTML;
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class EndorphinNodeVisitor implements Visitor {
+    private static final String SLOT_DEFAULT_KEY = "__default__";
     private static final Set<String> SELF_CLOSING_TAGS = new HashSet<>(Arrays.asList("area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"));
     private static long index = 0;
+
     private final String id;
+    private final String hash;
     private final StringBuilder current;
     private final List<Statement> target;
     private final Map<String, String> urls;
 
-    public EndorphinNodeVisitor(String id, List<Statement> target, Map<String, String> urls) {
-        this.current = new StringBuilder();
+    public EndorphinNodeVisitor(String id, String hash, List<Statement> target) {
         this.id = id;
+        this.hash = hash;
+        this.current = new StringBuilder();
         this.target = target;
-        this.urls = urls;
+        this.urls = new HashMap<>();;
     }
 
     private EndorphinNodeVisitor(EndorphinNodeVisitor parent, List<Statement> target) {
-        this(parent.id, target, parent.urls);
+        this.id = parent.id;
+        this.hash = parent.hash;
+        this.current = new StringBuilder();
+        this.target = target;
+        this.urls = parent.urls;
     }
 
-    public void accept(ENDTemplate template) {
-        template.accept(this);
+    public void accept(TemplateNode[] body) {
+        for (TemplateNode node : body) {
+            node.accept(this);
+        }
         flush();
     }
 
     @Override
-    public void visit(ENDTemplate template) {
-        writeElementStart(id);
-        writeElementEnd(id, template.getBody());
+    public void visit(ENDImport node) {
+        final String name = node.getName();
+        final String href = node.getHref();
+        final String componentId = href
+            .substring(2, href.length() - 5)
+            .replace("/", ".");
+
+        urls.put(name, componentId);
     }
 
     @Override
-    public void visit(ENDProgram program) {
-        for (Statement statement : program.getBody()) {
-            if (statement instanceof ExpressionStatement) {
-                write(((ExpressionStatement) statement).getExpression(), true);
-            }
-        }
+    public void visit(ENDTemplate node) {
+        write("<" + id + " " + hash + "-host");
+        writeElementEnd(id, node.getBody());
     }
 
     @Override
-    public void visit(ENDLiteral literal) {
-        final String data = literal.getString();
+    public void visit(ENDLiteral node) {
+        final String data = node.getString();
 
         if (!data.trim().isEmpty()) {
             write(data.replace("[\r\n\t]", ""));
@@ -93,34 +111,77 @@ public class EndorphinNodeVisitor implements Visitor {
     }
 
     @Override
-    public void visit(ENDInnerHTML innerHTML) {
-        write(innerHTML.getExpression(), false);
+    public void visit(ENDProgram node) {
+        for (Statement statement : node.getBody()) {
+            if (statement instanceof ExpressionStatement) {
+                write(((ExpressionStatement) statement).getExpression(), true);
+            }
+        }
     }
 
     @Override
-    public void visit(ENDElement element) {
-        writeElementStart(element.getName().getName());
-        writeAttributes(element.getAttributes());
-        writeElementEnd(element.getName().getName(), element.getBody());
+    public void visit(ENDInnerHTML node) {
+        write(node.getExpression(), false);
     }
 
     @Override
-    public void visit(ENDVariableStatement statement) {
+    public void visit(ENDElement node) {
+        final String name = node.getName().getName();
+
+        if (node.isComponent()) {
+            final List<Property> slots = new ArrayList<>();
+            final List<TemplateNode> defaultSlotNodes = new ArrayList<>();
+
+            for (TemplateNode child : node.getBody()) {
+                if (child instanceof ENDElement) {
+                    final Optional<String> slotId = getSlotName((ENDElement) child, "slot");
+
+                    if (slotId.isPresent()) {
+                        slots.add(new Property(slotId.get(), new ArrowFunctionExpression(inner(child))));
+                        continue;
+                    }
+                }
+
+                defaultSlotNodes.add(child);
+            }
+
+            if (!defaultSlotNodes.isEmpty()) {
+                final Statement body = inner(defaultSlotNodes.toArray(new TemplateNode[0]));
+                slots.add(new Property(new Identifier(SLOT_DEFAULT_KEY), new ArrowFunctionExpression(body)));
+            }
+
+            appendComponent(name, new ObjectExpression(Collections.emptyList()), new ObjectExpression(slots));
+        } else if ("slot".equals(name)) {
+            final Expression key = new Literal(getSlotName(node, "name").orElse(SLOT_DEFAULT_KEY));
+            final Expression value = node.getBody().length > 0 ?
+                new ArrowFunctionExpression(inner(node.getBody())) :
+                new Identifier("@empty-slot");
+
+            appendCall("@slot", key, value);
+        } else {
+            writeElementStart(name);
+            writeAttributes(node.getAttributes());
+            writeElementEnd(name, node.getBody());
+        }
+    }
+
+    @Override
+    public void visit(ENDVariableStatement node) {
         List<VariableDeclarator> declarators = new ArrayList<>();
-        for (ENDVariable variable : statement.getVariables()) {
+        for (ENDVariable variable : node.getVariables()) {
             declarators.add(new VariableDeclarator(variable.getName(), convert(variable.getValue())));
         }
         append(new VariableDeclaration(Kind.CONST, declarators));
     }
 
     @Override
-    public void visit(ENDIfStatement statement) {
-        append(new IfStatement(statement.getTest(), inner(statement.getConsequent())));
+    public void visit(ENDIfStatement node) {
+        append(new IfStatement(node.getTest(), inner(node.getConsequent())));
     }
 
     @Override
-    public void visit(ENDChooseStatement statement) {
-        final ENDChooseCase[] cases = statement.getCases();
+    public void visit(ENDChooseStatement node) {
+        final ENDChooseCase[] cases = node.getCases();
 
         Statement result = null;
         for (int i = cases.length - 1; i >= 0 ; i--) {
@@ -134,16 +195,16 @@ public class EndorphinNodeVisitor implements Visitor {
     }
 
     @Override
-    public void visit(ENDForEachStatement statement) {
+    public void visit(ENDForEachStatement node) {
         final String iteratorName = nextVarName();
-        final Expression expression = ((ExpressionStatement) statement.getSelect().getBody()[0]).getExpression();
+        final Expression expression = ((ExpressionStatement) node.getSelect().getBody()[0]).getExpression();
 
         append(new VariableDeclaration(iteratorName, new CallExpression("@iterator", expression)));
         append(new WhileStatement(
             new CallExpression(iteratorName, "hasNext"),
             new BlockStatement(
-                new VariableDeclaration(statement.getValueName(), new CallExpression(iteratorName, "next")),
-                inner(statement.getBody())
+                new VariableDeclaration(node.getValueName(), new CallExpression(iteratorName, "next")),
+                inner(node.getBody())
             )
         ));
     }
@@ -204,7 +265,7 @@ public class EndorphinNodeVisitor implements Visitor {
     }
 
     private void writeElementStart(String name) {
-        write("<" + name);
+        write("<" + name + " " + hash);
     }
 
     private void writeAttributes(ENDAttribute[] attributes) {
@@ -231,11 +292,13 @@ public class EndorphinNodeVisitor implements Visitor {
 
             if (expression instanceof ConditionalExpression) {
                 final ConditionalExpression condition = (ConditionalExpression) expression;
+                final Identifier callee = new Identifier("@write");
+                final Literal escape = new Literal(false);
 
                 append(new IfStatement(
                     condition.getTest(),
-                    new ExpressionStatement(condition.getConsequent()),
-                    new ExpressionStatement(condition.getAlternate())
+                    new ExpressionStatement(new CallExpression(callee, condition.getConsequent(), escape)),
+                    new ExpressionStatement(new CallExpression(callee, condition.getAlternate(), escape))
                 ));
                 return;
             }
@@ -277,19 +340,17 @@ public class EndorphinNodeVisitor implements Visitor {
         throw new UnsupportedNodeException(value, "PlainStatement to Expression converter");
     }
 
-//    private Optional<String> getSlotName(Element element, String attrName) {
-//        return Arrays.stream(element.getAttributes())
-//            .filter(attribute -> attrName.equals(attribute.getName()))
-//            .map(attribute -> {
-//                final TemplateNode[] nodes = attribute.getValue();
-//
-//                if (nodes.length != 1 || !(nodes[0] instanceof Text)) {
-//                    throw new IllegalArgumentException("name of slot expected to be a single text node (" + Arrays.toString(nodes) + " was provided)");
-//                }
-//
-//                return (Text) nodes[0];
-//            })
-//            .map(Text::getData)
-//            .findFirst();
-//    }
+    private Optional<String> getSlotName(ENDElement element, String attrName) {
+        return Arrays.stream(element.getAttributes())
+            .filter(attribute -> attribute.getName() instanceof Identifier)
+            .filter(attribute -> ((Identifier) attribute.getName()).getName().equals(attrName))
+            .map(attribute -> {
+                final PlainStatement value = attribute.getValue();
+                if (value instanceof Literal) {
+                    return ((Literal) value).getString();
+                }
+                throw new UnsupportedNodeException(value, "value of slot");
+            })
+            .findFirst();
+    }
 }

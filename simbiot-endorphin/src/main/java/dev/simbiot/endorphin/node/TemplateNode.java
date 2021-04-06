@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
     @Type(value = ENDElement.class, name = "ENDElement"),
     @Type(value = ENDForEachStatement.class, name = "ENDForEachStatement"),
     @Type(value = ENDIfStatement.class, name = "ENDIfStatement"),
+    @Type(value = ENDImport.class, name = "ENDImport"),
     @Type(value = ENDInnerHTML.class, name = "ENDInnerHTML"),
     @Type(value = ENDTemplate.class, name = "ENDTemplate"),
     @Type(value = ENDVariableStatement.class, name = "ENDVariableStatement"),
@@ -23,22 +24,24 @@ public interface TemplateNode extends dev.simbiot.ast.Node {
 
     interface Visitor {
 
-        void visit(ENDTemplate template);
+        void visit(ENDImport node);
 
-        void visit(ENDProgram program);
+        void visit(ENDTemplate node);
 
-        void visit(ENDLiteral literal);
+        void visit(ENDProgram node);
 
-        void visit(ENDInnerHTML innerHTML);
+        void visit(ENDLiteral node);
 
-        void visit(ENDElement element);
+        void visit(ENDInnerHTML node);
 
-        void visit(ENDVariableStatement statement);
+        void visit(ENDElement node);
 
-        void visit(ENDIfStatement statement);
+        void visit(ENDVariableStatement node);
 
-        void visit(ENDChooseStatement statement);
+        void visit(ENDIfStatement node);
 
-        void visit(ENDForEachStatement statement);
+        void visit(ENDChooseStatement node);
+
+        void visit(ENDForEachStatement node);
     }
 }

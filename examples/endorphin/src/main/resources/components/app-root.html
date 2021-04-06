@@ -1,7 +1,27 @@
 
+<link rel="import" href="./contact-card.html" />
+<link rel="import" href="./content-box.html" />
+
 <template>
     <div ref:container></div>
-	<main id="app" class="foo" class:hasUser={user}>
+
+    <contact-card>
+        <span slot="name">
+            {user.name}
+        </span>
+
+        <span slot="address">
+		    {user.address}
+	    </span>
+    </contact-card>
+
+    <content-box>
+        <e:for-each select={user.links}>
+            <a href={@value}>{@value}</a>
+        </e:for-each>
+    </content-box>
+
+	<main id="app" class:hasUser={user}>
         <e:attribute class="abc" data-value={user.name} data-text="raw text value" />
         <e:switch>
             <e:case test={user.name}>
@@ -15,24 +35,6 @@
             </e:default>
         </e:switch>
 
-        <e:for-each select={user.links}>
-            <a href={@value}>{@value}</a>
-        </e:for-each>
-
         {{user.name}}
     </main>
 </template>
-
-<style>
-    .foo {
-        font-size: 12px;
-        }
-
-    .access {
-        font-size: 13px;
-        }
-
-    .hasUser {
-        font-size: 14px;
-        }
-</style>

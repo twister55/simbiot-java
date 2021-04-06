@@ -19,7 +19,7 @@ public class ViewController {
 
     @GetMapping("/")
     public ModelAndView index() {
-        return new ModelAndView("my-component")
+        return new ModelAndView("app-root")
             .addObject("user", createUser())
             .addObject("access", true)
             .addObject("items", Arrays.asList(1, 2, 3, 4, 5));

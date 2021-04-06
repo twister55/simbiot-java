@@ -1,7 +1,7 @@
 import endorphin from 'endorphin';
-import * as MyComponent from './components/my-component.html';
+import * as App from './components/app-root.html';
 
-endorphin('my-component', MyComponent, {
+endorphin('app-root', App, {
     target: document.body,
     props: {
         user: {

@@ -8,7 +8,7 @@ import dev.simbiot.ast.BaseNode;
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class ENDImport extends BaseNode implements TemplateNode {
+public class ENDImport extends BaseNode implements ENDNode {
     private final String name;
     private final String href;
 

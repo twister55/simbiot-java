@@ -11,7 +11,7 @@ import dev.simbiot.ast.Program;
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class ENDChooseStatement extends BaseNode implements TemplateNode {
+public class ENDChooseStatement extends BaseNode implements ENDNode {
     /**
      * Added internally by expression hoister: contains expression for picking
      * one of inner `<choose>` statement

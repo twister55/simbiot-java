@@ -10,7 +10,7 @@ import dev.simbiot.ast.statement.Statement;
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class ENDProgram extends Program implements TemplateNode, AttributeName, PlainStatement {
+public class ENDProgram extends Program implements ENDNode, AttributeName, PlainStatement {
 
     @JsonCreator
     public ENDProgram(@JsonProperty("sourceType") SourceType sourceType,

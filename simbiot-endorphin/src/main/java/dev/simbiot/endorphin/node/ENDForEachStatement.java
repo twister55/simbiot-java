@@ -10,8 +10,8 @@ import dev.simbiot.ast.Program;
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class ENDForEachStatement extends BaseNode implements TemplateNode {
-    private final TemplateNode[] body;
+public class ENDForEachStatement extends BaseNode implements ENDNode {
+    private final ENDNode[] body;
     private final Program select;
     @Nullable
     private final Program key;
@@ -22,7 +22,7 @@ public class ENDForEachStatement extends BaseNode implements TemplateNode {
     /** Name of local variable for referencing iterator value */
     private final String valueName;
 
-    public ENDForEachStatement(@JsonProperty("body") TemplateNode[] body,
+    public ENDForEachStatement(@JsonProperty("body") ENDNode[] body,
                                @JsonProperty("select") Program select,
                                @Nullable @JsonProperty("key") Program key,
                                @JsonProperty("indexName") String indexName,
@@ -37,7 +37,7 @@ public class ENDForEachStatement extends BaseNode implements TemplateNode {
         this.valueName = valueName;
     }
 
-    public TemplateNode[] getBody() {
+    public ENDNode[] getBody() {
         return body;
     }
 

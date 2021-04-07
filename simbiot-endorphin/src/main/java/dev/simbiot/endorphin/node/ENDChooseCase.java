@@ -16,11 +16,11 @@ import dev.simbiot.ast.statement.ExpressionStatement;
 public class ENDChooseCase extends BaseNode {
     @Nullable
     private final Program test;
-    private final TemplateNode[] consequent;
+    private final ENDNode[] consequent;
 
     @JsonCreator
     public ENDChooseCase(@Nullable @JsonProperty("program") Program test,
-                         @JsonProperty("consequent") TemplateNode[] consequent) {
+                         @JsonProperty("consequent") ENDNode[] consequent) {
         super("ENDChooseCase");
         this.test = test;
         this.consequent = consequent;
@@ -35,7 +35,7 @@ public class ENDChooseCase extends BaseNode {
         return null;
     }
 
-    public TemplateNode[] getConsequent() {
+    public ENDNode[] getConsequent() {
         return consequent;
     }
 }

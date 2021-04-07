@@ -8,11 +8,11 @@ import dev.simbiot.ast.BaseNode;
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class ENDTemplate extends BaseNode implements TemplateNode {
-    private final TemplateNode[] body;
+public class ENDTemplate extends BaseNode implements ENDNode {
+    private final ENDNode[] body;
 
     @JsonCreator
-    public ENDTemplate(@JsonProperty("body") TemplateNode[] body) {
+    public ENDTemplate(@JsonProperty("body") ENDNode[] body) {
         super("ENDTemplate");
         this.body = body;
     }
@@ -22,7 +22,7 @@ public class ENDTemplate extends BaseNode implements TemplateNode {
         visitor.visit(this);
     }
 
-    public TemplateNode[] getBody() {
+    public ENDNode[] getBody() {
         return body;
     }
 }

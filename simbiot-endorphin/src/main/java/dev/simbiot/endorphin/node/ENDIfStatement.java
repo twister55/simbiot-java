@@ -11,13 +11,13 @@ import dev.simbiot.ast.statement.ExpressionStatement;
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class ENDIfStatement extends BaseNode implements TemplateNode {
+public class ENDIfStatement extends BaseNode implements ENDNode {
     private final Program test;
-    private final TemplateNode[] consequent;
+    private final ENDNode[] consequent;
 
     @JsonCreator
     public ENDIfStatement(@JsonProperty("test") Program test,
-                          @JsonProperty("consequent") TemplateNode[] consequent) {
+                          @JsonProperty("consequent") ENDNode[] consequent) {
         super("ENDIfStatement");
         this.test = test;
         this.consequent = consequent;
@@ -27,7 +27,7 @@ public class ENDIfStatement extends BaseNode implements TemplateNode {
         return ((ExpressionStatement) test.getBody()[0]).getExpression();
     }
 
-    public TemplateNode[] getConsequent() {
+    public ENDNode[] getConsequent() {
         return consequent;
     }
 

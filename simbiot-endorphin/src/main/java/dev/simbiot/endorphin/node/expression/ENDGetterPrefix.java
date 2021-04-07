@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import dev.simbiot.ast.BaseNode;
 import dev.simbiot.ast.expression.Expression;
-import dev.simbiot.endorphin.node.expression.IdentifierNode.Context;
+import dev.simbiot.endorphin.node.expression.IdentifierWithContext.Context;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>

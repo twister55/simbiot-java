@@ -38,13 +38,15 @@ import dev.simbiot.endorphin.node.ENDIfStatement;
 import dev.simbiot.endorphin.node.ENDImport;
 import dev.simbiot.endorphin.node.ENDInnerHTML;
 import dev.simbiot.endorphin.node.ENDLiteral;
+import dev.simbiot.endorphin.node.ENDNode;
+import dev.simbiot.endorphin.node.ENDNode.Visitor;
+import dev.simbiot.endorphin.node.ENDPartial;
+import dev.simbiot.endorphin.node.ENDPartialStatement;
 import dev.simbiot.endorphin.node.ENDProgram;
 import dev.simbiot.endorphin.node.ENDTemplate;
 import dev.simbiot.endorphin.node.ENDVariable;
 import dev.simbiot.endorphin.node.ENDVariableStatement;
 import dev.simbiot.endorphin.node.PlainStatement;
-import dev.simbiot.endorphin.node.TemplateNode;
-import dev.simbiot.endorphin.node.TemplateNode.Visitor;
 import dev.simbiot.runtime.HTML;
 
 /**
@@ -55,33 +57,35 @@ public class EndorphinNodeVisitor implements Visitor {
     private static final Set<String> SELF_CLOSING_TAGS = new HashSet<>(Arrays.asList("area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"));
     private static long index = 0;
 
+    public static List<Statement> accept(String id, EndorphinAst ast) {
+        final EndorphinNodeVisitor visitor = new EndorphinNodeVisitor(id, ast.hash);
+        for (ENDNode node : ast.body) {
+            node.accept(visitor);
+        }
+        visitor.flush();
+        return visitor.target;
+    }
+
     private final String id;
     private final String hash;
     private final StringBuilder current;
     private final List<Statement> target;
     private final Map<String, String> urls;
 
-    public EndorphinNodeVisitor(String id, String hash, List<Statement> target) {
+    public EndorphinNodeVisitor(String id, String hash) {
         this.id = id;
         this.hash = hash;
         this.current = new StringBuilder();
-        this.target = target;
+        this.target = new ArrayList<>();
         this.urls = new HashMap<>();
     }
 
-    private EndorphinNodeVisitor(EndorphinNodeVisitor parent, List<Statement> target) {
+    private EndorphinNodeVisitor(EndorphinNodeVisitor parent) {
         this.id = parent.id;
         this.hash = parent.hash;
         this.current = new StringBuilder();
-        this.target = target;
+        this.target = new ArrayList<>();
         this.urls = parent.urls;
-    }
-
-    public void accept(TemplateNode[] body) {
-        for (TemplateNode node : body) {
-            node.accept(this);
-        }
-        flush();
     }
 
     @Override
@@ -93,6 +97,11 @@ public class EndorphinNodeVisitor implements Visitor {
             .replace("/", ".");
 
         urls.put(name, componentId);
+    }
+
+    @Override
+    public void visit(ENDPartial node) {
+
     }
 
     @Override
@@ -130,9 +139,9 @@ public class EndorphinNodeVisitor implements Visitor {
 
         if (node.isComponent()) {
             final List<Property> slots = new ArrayList<>();
-            final List<TemplateNode> defaultSlotNodes = new ArrayList<>();
+            final List<ENDNode> defaultSlotNodes = new ArrayList<>();
 
-            for (TemplateNode child : node.getBody()) {
+            for (ENDNode child : node.getBody()) {
                 if (child instanceof ENDElement) {
                     final Optional<String> slotId = getSlotName((ENDElement) child, "slot");
 
@@ -146,7 +155,7 @@ public class EndorphinNodeVisitor implements Visitor {
             }
 
             if (!defaultSlotNodes.isEmpty()) {
-                final Statement body = inner(defaultSlotNodes.toArray(new TemplateNode[0]));
+                final Statement body = inner(defaultSlotNodes.toArray(new ENDNode[0]));
                 slots.add(new Property(new Identifier(SLOT_DEFAULT_KEY), new ArrowFunctionExpression(body)));
             }
 
@@ -209,6 +218,11 @@ public class EndorphinNodeVisitor implements Visitor {
         ));
     }
 
+    @Override
+    public void visit(ENDPartialStatement node) {
+
+    }
+
     private void flush() {
         if (current.length() > 0) {
             String value = current.toString();
@@ -217,14 +231,13 @@ public class EndorphinNodeVisitor implements Visitor {
         }
     }
 
-    private Statement inner(TemplateNode... children) {
-        final List<Statement> result = new ArrayList<>();
-        final EndorphinNodeVisitor visitor = new EndorphinNodeVisitor(this, result);
-        for (TemplateNode node : children) {
+    private Statement inner(ENDNode... children) {
+        final EndorphinNodeVisitor visitor = new EndorphinNodeVisitor(this);
+        for (ENDNode node : children) {
             node.accept(visitor);
         }
         visitor.flush();
-        return new BlockStatement(result);
+        return new BlockStatement(visitor.target);
     }
 
     private String nextVarName() {
@@ -307,12 +320,12 @@ public class EndorphinNodeVisitor implements Visitor {
         }
     }
 
-    private void writeElementEnd(String name, TemplateNode[] children) {
+    private void writeElementEnd(String name, ENDNode[] children) {
         if (children.length == 0 && isSelfClosingTag(name)) {
             write("/>");
         } else {
             write(">");
-            for (TemplateNode child : children) {
+            for (ENDNode child : children) {
                 child.accept(this);
             }
             write("</" + name + ">");

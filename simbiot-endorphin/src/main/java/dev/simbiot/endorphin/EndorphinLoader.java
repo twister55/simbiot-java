@@ -1,8 +1,6 @@
 package dev.simbiot.endorphin;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.TreeNode;
@@ -21,13 +19,13 @@ import dev.simbiot.ast.Program;
 import dev.simbiot.ast.ProgramLoader;
 import dev.simbiot.ast.SourceType;
 import dev.simbiot.ast.expression.Identifier;
-import dev.simbiot.ast.statement.Statement;
 import dev.simbiot.endorphin.node.expression.ENDCaller;
 import dev.simbiot.endorphin.node.expression.ENDFilter;
 import dev.simbiot.endorphin.node.expression.ENDGetter;
 import dev.simbiot.endorphin.node.expression.ENDGetterPrefix;
-import dev.simbiot.endorphin.node.expression.IdentifierNode;
-import dev.simbiot.endorphin.node.expression.IdentifierNode.Context;
+import dev.simbiot.endorphin.node.expression.IdentifierWithContext;
+import dev.simbiot.endorphin.node.expression.IdentifierWithContext.Context;
+import static dev.simbiot.endorphin.EndorphinNodeVisitor.accept;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
@@ -37,9 +35,7 @@ public class EndorphinLoader extends ProgramLoader<EndorphinAst> {
     public EndorphinLoader() {
         super(EndorphinAst.class);
         registerModule(new SimpleModule()
-            .registerSubtypes(
-                IdentifierNode.class, ENDGetter.class, ENDCaller.class, ENDGetterPrefix.class, ENDFilter.class
-            )
+            .registerSubtypes(ENDGetter.class, ENDCaller.class, ENDGetterPrefix.class, ENDFilter.class)
             .setDeserializerModifier(new BeanDeserializerModifier() {
                 @Override
                 public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc, JsonDeserializer<?> deserializer) {
@@ -55,20 +51,7 @@ public class EndorphinLoader extends ProgramLoader<EndorphinAst> {
 
     @Override
     protected Program process(String id, EndorphinAst ast) {
-        final List<Statement> result = new ArrayList<>();
-        final EndorphinNodeVisitor visitor = new EndorphinNodeVisitor(id, hash(ast.getFilename()), result);
-        visitor.accept(ast.getBody());
-        return new Program(SourceType.SCRIPT, result);
-    }
-
-    // A simple function for calculation of has (Adler32) from given string
-    private String hash(String filePath) {
-        int s1 = 1, s2 = 0;
-        for (int i = 0, len = filePath.length(); i < len; i++) {
-            s1 = (s1 + filePath.charAt(i)) % 65521;
-            s2 = (s2 + s1) % 65521;
-        }
-        return "e" + Integer.toString((s2 << 16) + s1, 36);
+        return new Program(SourceType.SCRIPT, accept(id, ast));
     }
 
     private static class IdentifierDeserializer extends StdDeserializer<Identifier> implements ResolvableDeserializer {
@@ -89,7 +72,7 @@ public class EndorphinLoader extends ProgramLoader<EndorphinAst> {
                 return new Identifier(name.textValue());
             }
 
-            return new IdentifierNode(name.textValue(), Context.parse(((TextNode) context).textValue()));
+            return new IdentifierWithContext(name.textValue(), Context.of(((TextNode) context).textValue()));
         }
 
         @Override

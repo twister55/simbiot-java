@@ -11,7 +11,7 @@ import dev.simbiot.ast.statement.ExpressionStatement;
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class ENDInnerHTML extends BaseNode implements TemplateNode {
+public class ENDInnerHTML extends BaseNode implements ENDNode {
     private final Program value;
 
     @JsonCreator

@@ -10,12 +10,12 @@ import dev.simbiot.endorphin.node.AttributeName;
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class IdentifierNode extends Identifier implements AttributeName {
+public class IdentifierWithContext extends Identifier implements AttributeName {
     private final Context context;
 
     @JsonCreator
-    public IdentifierNode(@JsonProperty("name") String name,
-                          @JsonProperty("context") Context context) {
+    public IdentifierWithContext(@JsonProperty("name") String name,
+                                 @JsonProperty("context") Context context) {
         super(name);
         this.context = context;
     }
@@ -45,7 +45,7 @@ public class IdentifierNode extends Identifier implements AttributeName {
             return value;
         }
 
-        public static Context parse(String name) {
+        public static Context of(String name) {
             return valueOf(name.toUpperCase().replace("-", "_"));
         }
     }

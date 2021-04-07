@@ -10,7 +10,7 @@ import dev.simbiot.ast.expression.Literal;
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class ENDLiteral extends Literal implements TemplateNode, PlainStatement {
+public class ENDLiteral extends Literal implements ENDNode, PlainStatement {
 
     @JsonCreator
     public ENDLiteral(@Nullable @JsonProperty("value") Object value,
@@ -20,7 +20,7 @@ public class ENDLiteral extends Literal implements TemplateNode, PlainStatement 
     }
 
     @Override
-    public void accept(TemplateNode.Visitor visitor) {
+    public void accept(ENDNode.Visitor visitor) {
         visitor.visit(this);
     }
 }

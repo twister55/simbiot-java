@@ -3,6 +3,8 @@ package dev.simbiot.endorphin.node;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 
+import dev.simbiot.ast.Node;
+
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
@@ -14,17 +16,21 @@ import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
     @Type(value = ENDImport.class, name = "ENDImport"),
     @Type(value = ENDInnerHTML.class, name = "ENDInnerHTML"),
     @Type(value = ENDTemplate.class, name = "ENDTemplate"),
+    @Type(value = ENDPartial.class, name = "ENDPartial"),
+    @Type(value = ENDPartialStatement.class, name = "ENDPartialStatement"),
     @Type(value = ENDVariableStatement.class, name = "ENDVariableStatement"),
     @Type(value = ENDLiteral.class, name = "Literal"),
     @Type(value = ENDProgram.class, name = "Program"),
 })
-public interface TemplateNode extends dev.simbiot.ast.Node {
+public interface ENDNode extends Node {
 
     void accept(Visitor visitor);
 
     interface Visitor {
 
         void visit(ENDImport node);
+
+        void visit(ENDPartial node);
 
         void visit(ENDTemplate node);
 
@@ -43,5 +49,7 @@ public interface TemplateNode extends dev.simbiot.ast.Node {
         void visit(ENDChooseStatement node);
 
         void visit(ENDForEachStatement node);
+
+        void visit(ENDPartialStatement node);
     }
 }

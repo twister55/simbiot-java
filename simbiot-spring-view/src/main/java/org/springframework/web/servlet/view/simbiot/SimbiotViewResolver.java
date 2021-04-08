@@ -1,5 +1,7 @@
 package org.springframework.web.servlet.view.simbiot;
 
+import java.nio.charset.Charset;
+
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.view.AbstractTemplateViewResolver;
 import org.springframework.web.servlet.view.AbstractUrlBasedView;
@@ -32,6 +34,7 @@ public class SimbiotViewResolver extends AbstractTemplateViewResolver implements
     @Override
     protected AbstractUrlBasedView buildView(String viewName) throws Exception {
         final SimbiotView view = (SimbiotView) super.buildView(viewName);
+        view.setContentType("text/html;charset=" + Charset.defaultCharset().name());
         view.setComponent(componentProvider.getComponent(viewName));
         view.setTemplate(templateProvider.getComponent("template.html"));
         return view;

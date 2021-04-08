@@ -2,7 +2,6 @@ package dev.simbiot.endorphin;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -137,6 +136,8 @@ public class EndorphinNodeVisitor implements Visitor {
     public void visit(ENDElement node) {
         final String name = node.getName().getName();
 
+        writeElementStart(name);
+
         if (node.isComponent()) {
             final List<Property> slots = new ArrayList<>();
             final List<ENDNode> defaultSlotNodes = new ArrayList<>();
@@ -159,16 +160,23 @@ public class EndorphinNodeVisitor implements Visitor {
                 slots.add(new Property(new Identifier(SLOT_DEFAULT_KEY), new ArrowFunctionExpression(body)));
             }
 
-            appendComponent(name, new ObjectExpression(Collections.emptyList()), new ObjectExpression(slots));
+            final List<Property> props = new ArrayList<>();
+            for (ENDAttribute attr : node.getAttributes()) {
+                props.add(new Property((Identifier) attr.getName(), convert(attr.getValue())));
+            }
+
+            appendComponent(name, new ObjectExpression(props), new ObjectExpression(slots));
         } else if ("slot".equals(name)) {
             final Expression key = new Literal(getSlotName(node, "name").orElse(SLOT_DEFAULT_KEY));
             final Expression value = node.getBody().length > 0 ?
                 new ArrowFunctionExpression(inner(node.getBody())) :
                 new Identifier("@empty-slot");
 
+            writeAttributes(node.getAttributes());
+            write(">");
             appendCall("@slot", key, value);
+            write("</" + name + ">");
         } else {
-            writeElementStart(name);
             writeAttributes(node.getAttributes());
             writeElementEnd(name, node.getBody());
         }

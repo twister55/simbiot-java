@@ -52,6 +52,10 @@ public class Objects {
 
     @SuppressWarnings("rawtypes")
     public static Object access(Object obj, Object prop) {
+        if (obj == null) {
+            return null;
+        }
+
         if (obj instanceof Map) {
             return ((Map) obj).get(prop);
         }

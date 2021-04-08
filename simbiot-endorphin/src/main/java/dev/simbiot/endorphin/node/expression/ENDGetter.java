@@ -21,6 +21,6 @@ public class ENDGetter extends BaseNode implements Expression {
 
     @Override
     public void accept(Visitor visitor) {
-        visitor.visit(new CallExpression("@access", path[0], path[1]));
+        visitor.visit(new CallExpression("@getter", path));
     }
 }

@@ -81,6 +81,20 @@ public class Objects {
         return null;
     }
 
+    public static Object getter(Object... args) {
+        Object value = args[0];
+
+        for (int i = 1; i < args.length; i++) {
+            value = access(value, args[i]);
+
+            if (value == null) {
+                break;
+            }
+        }
+
+        return value;
+    }
+
     @SuppressWarnings("unchecked")
     public static Iterator<Object> iterator(Object obj) {
         if (obj instanceof Iterable) {

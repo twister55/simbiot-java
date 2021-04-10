@@ -29,7 +29,13 @@ public abstract class ProgramLoader<T> {
     }
 
     protected T readValue(String id) throws IOException {
-        return mapper.readValue(getStream(id), type);
+        final InputStream stream = getStream(id);
+
+        if (stream == null) {
+            throw new IOException("Component with id '" + id + "' not found");
+        }
+
+        return mapper.readValue(stream, type);
     }
 
     protected void registerModule(Module module) {

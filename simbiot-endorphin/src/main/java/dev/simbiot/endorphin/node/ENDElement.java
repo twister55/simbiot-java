@@ -38,6 +38,10 @@ public class ENDElement extends BaseNode implements ENDNode {
         return attributes;
     }
 
+    public boolean hasChildren() {
+        return body.length > 0;
+    }
+
     public ENDNode[] getBody() {
         return body;
     }

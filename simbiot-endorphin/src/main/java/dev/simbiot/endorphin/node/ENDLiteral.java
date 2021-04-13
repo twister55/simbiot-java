@@ -5,6 +5,7 @@ import org.jetbrains.annotations.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import dev.simbiot.ast.expression.Expression;
 import dev.simbiot.ast.expression.Literal;
 
 /**
@@ -22,5 +23,10 @@ public class ENDLiteral extends Literal implements ENDNode, PlainStatement {
     @Override
     public void accept(ENDNode.Visitor visitor) {
         visitor.visit(this);
+    }
+
+    @Override
+    public Expression getExpression() {
+        return this;
     }
 }

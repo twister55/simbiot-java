@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import dev.simbiot.ast.Program;
 import dev.simbiot.ast.SourceType;
+import dev.simbiot.ast.expression.Expression;
+import dev.simbiot.ast.statement.ExpressionStatement;
 import dev.simbiot.ast.statement.Statement;
 
 /**
@@ -21,5 +23,10 @@ public class ENDProgram extends Program implements ENDNode, AttributeName, Plain
     @Override
     public void accept(Visitor visitor) {
         visitor.visit(this);
+    }
+
+    @Override
+    public Expression getExpression() {
+        return ((ExpressionStatement) getBody()[0]).getExpression();
     }
 }

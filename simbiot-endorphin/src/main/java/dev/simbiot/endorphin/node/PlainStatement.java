@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 
 import dev.simbiot.ast.Node;
+import dev.simbiot.ast.expression.Expression;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
@@ -14,4 +15,7 @@ import dev.simbiot.ast.Node;
     @Type(value = ENDProgram.class, name = "Program")
 })
 public interface PlainStatement extends Node {
+
+    Expression getExpression();
+
 }

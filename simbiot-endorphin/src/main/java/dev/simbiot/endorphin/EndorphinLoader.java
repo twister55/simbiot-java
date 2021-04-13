@@ -17,7 +17,6 @@ import com.fasterxml.jackson.databind.node.TextNode;
 
 import dev.simbiot.ast.Program;
 import dev.simbiot.ast.ProgramLoader;
-import dev.simbiot.ast.SourceType;
 import dev.simbiot.ast.expression.Identifier;
 import dev.simbiot.endorphin.node.expression.ENDCaller;
 import dev.simbiot.endorphin.node.expression.ENDFilter;
@@ -25,7 +24,6 @@ import dev.simbiot.endorphin.node.expression.ENDGetter;
 import dev.simbiot.endorphin.node.expression.ENDGetterPrefix;
 import dev.simbiot.endorphin.node.expression.IdentifierWithContext;
 import dev.simbiot.endorphin.node.expression.IdentifierWithContext.Context;
-import static dev.simbiot.endorphin.EndorphinNodeVisitor.accept;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
@@ -51,7 +49,9 @@ public class EndorphinLoader extends ProgramLoader<EndorphinAst> {
 
     @Override
     protected Program process(String id, EndorphinAst ast) {
-        return new Program(SourceType.SCRIPT, accept(id, ast));
+        return new EndorphinNodeVisitor(id, ast.hash)
+            .accept(ast.body)
+            .program();
     }
 
     private static class IdentifierDeserializer extends StdDeserializer<Identifier> implements ResolvableDeserializer {

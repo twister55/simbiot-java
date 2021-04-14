@@ -32,10 +32,10 @@ import static net.bytebuddy.matcher.ElementMatchers.isAbstract;
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public abstract class Compiler {
-    private final ExpressionsResolver expressionsResolver;
+    private final ExpressionResolver resolver;
 
-    protected Compiler(ExpressionsResolver expressionsResolver) {
-        this.expressionsResolver = expressionsResolver;
+    protected Compiler(ExpressionResolver resolver) {
+        this.resolver = resolver;
     }
 
     protected <T> Unloaded<T> compile(CompilerContext ctx, Class<T> type, Statement... statements) {
@@ -46,7 +46,7 @@ public abstract class Compiler {
             .getOnly()
             .getParameters();
 
-        ctx.init(builder.toTypeDescription(), parameters);
+        ctx.bind(builder.toTypeDescription(), parameters);
 
         return builder
             .method(isAbstract())
@@ -108,7 +108,7 @@ public abstract class Compiler {
         @Override
         public void visit(VariableDeclaration statement) {
             for (VariableDeclarator declarator : statement.getDeclarations()) {
-                append(ctx.store(declarator.getId().getName(), expressionsResolver.resolve(ctx, declarator.getInit())));
+                append(ctx.store(declarator.getId().getName(), resolver.resolve(ctx, declarator.getInit())));
             }
         }
 
@@ -155,7 +155,7 @@ public abstract class Compiler {
         }
 
         private void append(Expression expression) {
-            result.append(expressionsResolver.resolve(ctx, expression));
+            result.append(resolver.resolve(ctx, expression));
         }
 
         private void append(StackManipulation manipulation) {

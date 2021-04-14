@@ -18,30 +18,43 @@ import net.bytebuddy.dynamic.loading.InjectionClassLoader;
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class CompilingProvider implements ComponentProvider {
-    private final ComponentCompiler compiler;
     private final ProgramLoader<?> loader;
+    private final MethodBindings bindings;
+    private final ComponentCompiler compiler;
     private final Map<String, Component> cache;
 
     public CompilingProvider(ProgramLoader<?> loader) {
-        this(loader, new ComponentCompiler(new ExpressionsResolver()));
-    }
-
-    public CompilingProvider(ProgramLoader<?> loader, ComponentCompiler compiler) {
-        this.compiler = compiler;
         this.loader = loader;
+        this.bindings = new MethodBindings();
+        this.compiler = new ComponentCompiler(createExpressionResolver());
         this.cache = new ConcurrentHashMap<>();
     }
 
     @Override
     public Component getComponent(String id) throws IOException {
         try {
-            return this.cache.computeIfAbsent(id, this::createComponent);
+            Component component = this.cache.get(id);
+
+            if (component == null) {
+                component = this.createComponent(id);
+                this.cache.put(id, component);
+            }
+
+            return component;
         } catch (RuntimeException e) {
             if (e.getCause() instanceof IOException) {
                 throw (IOException) e.getCause();
             }
             throw e;
         }
+    }
+
+    protected MethodBindings getMethodBindings() {
+        return bindings;
+    }
+
+    protected ExpressionResolver createExpressionResolver() {
+        return new ExpressionResolver(getMethodBindings());
     }
 
     private Component createComponent(String id) {

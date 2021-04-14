@@ -6,7 +6,6 @@ import dev.simbiot.Component;
 import dev.simbiot.Component.Slot;
 import dev.simbiot.ast.expression.ArrowFunctionExpression;
 import dev.simbiot.runtime.Writer;
-import net.bytebuddy.description.field.FieldDescription;
 import net.bytebuddy.description.modifier.FieldManifestation;
 import net.bytebuddy.description.modifier.Visibility;
 import net.bytebuddy.description.type.TypeDescription;
@@ -27,16 +26,8 @@ public class FunctionCompiler extends Compiler {
     private static final Generic SCOPE_TYPE = of(Object[].class).asGenericType();
     private static final Generic COMPONENTS_TYPE = of(Component[].class).asGenericType();
 
-    public static FieldDescription emptySlot() {
-        try {
-            return new FieldDescription.ForLoadedField(Slot.class.getField("EMPTY"));
-        } catch (NoSuchFieldException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public FunctionCompiler(ExpressionsResolver expressionsResolver) {
-        super(expressionsResolver);
+    public FunctionCompiler(ExpressionResolver resolver) {
+        super(resolver);
     }
 
     public TypeDescription compile(CompilerContext ctx, ArrowFunctionExpression expression) {

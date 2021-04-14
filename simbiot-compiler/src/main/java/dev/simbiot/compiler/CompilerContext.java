@@ -6,23 +6,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import dev.simbiot.ast.expression.Literal;
 import net.bytebuddy.description.field.FieldDescription.InDefinedShape;
 import net.bytebuddy.description.field.FieldList;
 import net.bytebuddy.description.method.ParameterDescription;
 import net.bytebuddy.description.method.ParameterList;
 import net.bytebuddy.description.type.TypeDescription;
-import net.bytebuddy.description.type.TypeDescription.ForLoadedType;
 import net.bytebuddy.description.type.TypeDescription.Generic;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.DynamicType.Unloaded;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.implementation.bytecode.StackManipulation.Compound;
-import net.bytebuddy.implementation.bytecode.constant.TextConstant;
-import net.bytebuddy.implementation.bytecode.member.MethodInvocation;
 import static net.bytebuddy.implementation.bytecode.member.MethodVariableAccess.REFERENCE;
 import static net.bytebuddy.matcher.ElementMatchers.isStatic;
 import static net.bytebuddy.matcher.ElementMatchers.named;
-import static net.bytebuddy.matcher.ElementMatchers.takesArguments;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
@@ -31,7 +28,7 @@ public class CompilerContext {
     private final String id;
     private final Map<String, Chunk> refs;
     private final Map<String, Generic> types;
-    private final List<StackManipulation> constants;
+    private final List<String> constants;
     private final List<String> componentIds;
     private final List<Unloaded<?>> inlineTypes;
 
@@ -59,7 +56,7 @@ public class CompilerContext {
         this.type = parent.type;
     }
 
-    public void init(TypeDescription type, ParameterList<?> parameters) {
+    public void bind(TypeDescription type, ParameterList<?> parameters) {
         this.type = type;
         this.parameters = parameters;
         this.offset = parameters.size();
@@ -105,21 +102,13 @@ public class CompilerContext {
         return new Compound(value.result(), REFERENCE.storeAt(ref));
     }
 
-    public List<StackManipulation> getConstants() {
+    public List<String> getConstants() {
         return constants;
     }
 
-    public int addConstant(String text) {
+    public int addConstant(Literal text) {
         final int index = constants.size();
-        constants.add(new Compound(
-            new TextConstant(text),
-            MethodInvocation.invoke(
-                new ForLoadedType(String.class)
-                    .getDeclaredMethods()
-                    .filter(named("getBytes").and(takesArguments(0)))
-                    .getOnly()
-            )
-        ));
+        constants.add(text.getString());
         return index;
     }
 

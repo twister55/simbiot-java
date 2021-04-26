@@ -59,7 +59,7 @@ public class Literal extends BaseNode implements Expression {
 
     public int getInt() {
         if (getString() != null) {
-            return Integer.parseInt(getString());
+            return value instanceof Integer ? (int) value : Integer.parseInt(getString());
         }
         return -1;
     }

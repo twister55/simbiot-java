@@ -57,6 +57,10 @@ import dev.simbiot.runtime.HTML;
  */
 public class SvelteNodeVisitor implements Visitor {
     private static final Set<String> SELF_CLOSING_TAGS = new HashSet<>(Arrays.asList("area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"));
+
+    private static final Expression SLOTS = new Identifier("@slots");
+    private static final Expression GET_SLOT = new MemberExpression(SLOTS, new Identifier("getOrDefault"));
+
     private static long index = 0;
     private final StringBuilder current;
     private final List<Statement> target;
@@ -178,7 +182,9 @@ public class SvelteNodeVisitor implements Visitor {
             new ArrowFunctionExpression(inner(slot.getChildren())) :
             new Identifier("@empty-slot");
 
-        appendCall("@slot", key, value);
+        append(new ExpressionStatement(new CallExpression(
+            new MemberExpression(new CallExpression(GET_SLOT, key, value), new Identifier("render"))
+        )));
     }
 
     @Override

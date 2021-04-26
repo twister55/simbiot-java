@@ -12,6 +12,10 @@ import java.util.Map;
  */
 public class Objects {
 
+    public static boolean equals(Object a, Object b) {
+        return java.util.Objects.equals(a, b);
+    }
+
     public static boolean is(Object value) {
         if (value instanceof String) {
             return !"".equals(value);

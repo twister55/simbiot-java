@@ -21,20 +21,20 @@ import net.bytebuddy.jar.asm.Opcodes;
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class GoTo implements StackManipulation {
-    private final Label label;
+    private final Label destination;
 
-    public GoTo(Label label) {
-        this.label = label;
+    public GoTo(Label destination) {
+        this.destination = destination;
     }
 
     @Override
     public boolean isValid() {
-        return true;
+        return destination != null;
     }
 
     @Override
     public Size apply(MethodVisitor mv, Context ctx) {
-        mv.visitJumpInsn(Opcodes.GOTO, label);
+        mv.visitJumpInsn(Opcodes.GOTO, destination);
         return new Size(0, 0);
     }
 }

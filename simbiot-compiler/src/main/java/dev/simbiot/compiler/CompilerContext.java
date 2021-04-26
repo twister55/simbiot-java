@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import dev.simbiot.ast.expression.Literal;
+import dev.simbiot.compiler.bytecode.StackChunk;
 import net.bytebuddy.description.field.FieldDescription.InDefinedShape;
 import net.bytebuddy.description.field.FieldList;
 import net.bytebuddy.description.method.ParameterDescription;
@@ -18,6 +19,7 @@ import net.bytebuddy.dynamic.DynamicType.Unloaded;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.implementation.bytecode.StackManipulation.Compound;
 import static net.bytebuddy.implementation.bytecode.member.MethodVariableAccess.REFERENCE;
+import static net.bytebuddy.implementation.bytecode.member.MethodVariableAccess.of;
 import static net.bytebuddy.matcher.ElementMatchers.isStatic;
 import static net.bytebuddy.matcher.ElementMatchers.named;
 
@@ -26,7 +28,7 @@ import static net.bytebuddy.matcher.ElementMatchers.named;
  */
 public class CompilerContext {
     private final String id;
-    private final Map<String, Chunk> refs;
+    private final Map<String, Integer> offsets;
     private final Map<String, Generic> types;
     private final List<String> constants;
     private final List<String> componentIds;
@@ -34,12 +36,11 @@ public class CompilerContext {
 
     private TypeDescription type;
     private ParameterList<?> parameters;
-    private int localVarsCount;
     private int offset;
 
     public CompilerContext(String id) {
         this.id = id;
-        this.refs = new HashMap<>();
+        this.offsets = new HashMap<>();
         this.types = new HashMap<>();
         this.constants = new ArrayList<>();
         this.componentIds = new ArrayList<>();
@@ -48,7 +49,7 @@ public class CompilerContext {
 
     protected CompilerContext(String id, CompilerContext parent) {
         this.id = id;
-        this.refs = new HashMap<>();
+        this.offsets = new HashMap<>();
         this.types = new HashMap<>();
         this.constants = parent.constants;
         this.componentIds = parent.componentIds;
@@ -70,36 +71,46 @@ public class CompilerContext {
         return type;
     }
 
-    public int getLocalVarsCount() {
-        return localVarsCount;
+    public int getStackSize() {
+        return offset + 1;
     }
 
-    public Chunk writer() {
+    public StackChunk writer() {
         return param(0);
     }
 
-    public Chunk props() {
+    public StackChunk props() {
         return param(1);
     }
 
-    public Chunk slots() {
+    public StackChunk slots() {
         return param(2);
     }
 
-    public Chunk resolve(String name) {
+    public StackChunk resolve(String name) {
         if (name.startsWith("@")) {
             return field(name.substring(1));
         } else {
-            return ref(name);
+            return localVar(name);
         }
     }
 
-    public StackManipulation store(String name, Chunk value) {
-        final int ref = ++offset;
-        localVarsCount++;
+    public StackManipulation declare(String name, StackChunk value) {
+        final int offset = ++this.offset;
         types.put(name, value.type());
-        refs.put(name, Chunk.of(REFERENCE.loadFrom(offset), types.get(name)));
-        return new Compound(value.result(), REFERENCE.storeAt(ref));
+        offsets.put(name, offset);
+        return new Compound(
+            value,
+            of(value.type()).storeAt(offset)
+        );
+    }
+
+    public int offset(String name) {
+        final Integer offset = offsets.get(name);
+        if (offset == null) {
+            return -1;
+        }
+        return offset;
     }
 
     public List<String> getConstants() {
@@ -134,20 +145,29 @@ public class CompilerContext {
         return inlineTypes.stream().map(DynamicType::getTypeDescription).collect(Collectors.toList());
     }
 
-    public ScopedContext createInner() {
-        return new ScopedContext(this, inlineTypes.size());
+    public InlineFunctionContext createInlineContext() {
+        return new InlineFunctionContext(this, inlineTypes.size());
     }
 
-    protected Chunk param(int index) {
-        final ParameterDescription param = this.parameters.get(index);
-        return Chunk.of(REFERENCE.loadFrom(param.getOffset()), param.getType());
+    protected StackChunk localVar(String name) {
+        final Generic type = types.getOrDefault(name, Generic.OBJECT);
+        final int offset = offset(name);
+
+        if (offset == -1) {
+            return StackChunk.NULL;
+        }
+
+        if (type.isPrimitive()) {
+            return new StackChunk(
+                type,
+                new Compound(of(type).loadFrom(offset)/*, PrimitiveBoxing.forPrimitive(type)*/)
+            );
+        }
+
+        return new StackChunk(type, of(type).loadFrom(offset));
     }
 
-    protected Chunk ref(String name) {
-        return refs.getOrDefault(name, Chunk.NULL);
-    }
-
-    protected Chunk field(String name) {
+    protected StackChunk field(String name) {
         FieldList<InDefinedShape> fields = type.getDeclaredFields().filter(named(name));
 
         if (fields.isEmpty()) {
@@ -165,6 +185,11 @@ public class CompilerContext {
             }
         }
 
-        return fields.isEmpty() ? Chunk.NULL : Chunk.forField(fields.getOnly());
+        return fields.isEmpty() ? StackChunk.NULL : StackChunk.forField(fields.getOnly());
+    }
+
+    protected StackChunk param(int index) {
+        final ParameterDescription param = this.parameters.get(index);
+        return new StackChunk(param.getType(), REFERENCE.loadFrom(param.getOffset()));
     }
 }

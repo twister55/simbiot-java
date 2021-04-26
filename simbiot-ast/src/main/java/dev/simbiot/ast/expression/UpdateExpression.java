@@ -9,25 +9,25 @@ import dev.simbiot.ast.BaseNode;
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class UpdateExpression extends BaseNode implements Expression {
+    private final Identifier argument;
     private final Operator operator;
-    private final Expression argument;
     private final boolean prefix;
 
-    public static UpdateExpression increment(Expression argument) {
-        return new UpdateExpression(Operator.INCREMENT, argument, false);
+    public static UpdateExpression increment(Identifier argument) {
+        return new UpdateExpression(argument, Operator.INCREMENT, false);
     }
 
-    public static UpdateExpression decrement(Expression argument) {
-        return new UpdateExpression(Operator.DECREMENT, argument, false);
+    public static UpdateExpression decrement(Identifier argument) {
+        return new UpdateExpression(argument, Operator.DECREMENT, false);
     }
 
     @JsonCreator
-    public UpdateExpression(@JsonProperty("operator") Operator operator,
-                            @JsonProperty("argument") Expression argument,
+    public UpdateExpression(@JsonProperty("argument") Identifier argument,
+                            @JsonProperty("operator") Operator operator,
                             @JsonProperty("prefix") boolean prefix) {
         super("UpdateExpression");
-        this.operator = operator;
         this.argument = argument;
+        this.operator = operator;
         this.prefix = prefix;
     }
 
@@ -36,7 +36,7 @@ public class UpdateExpression extends BaseNode implements Expression {
         visitor.visit(this);
     }
 
-    public Expression getArgument() {
+    public Identifier getArgument() {
         return argument;
     }
 

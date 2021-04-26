@@ -12,20 +12,20 @@ import net.bytebuddy.jar.asm.MethodVisitor;
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class JumpTarget implements StackManipulation {
-    private final Label label;
+    private final Label destination;
 
-    public JumpTarget(Label label) {
-        this.label = label;
+    public JumpTarget(Label destination) {
+        this.destination = destination;
     }
 
     @Override
     public boolean isValid() {
-        return true;
+        return destination != null;
     }
 
     @Override
     public Size apply(MethodVisitor mv, Context ctx) {
-        mv.visitLabel(label);
+        mv.visitLabel(destination);
         return new Size(0, 0);
     }
 }

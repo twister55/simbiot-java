@@ -13,6 +13,7 @@ import dev.simbiot.ast.SourceType;
 import dev.simbiot.ast.expression.CallExpression;
 import dev.simbiot.ast.expression.Identifier;
 import dev.simbiot.ast.expression.Literal;
+import dev.simbiot.ast.expression.MemberExpression;
 import dev.simbiot.ast.statement.Statement;
 import dev.simbiot.ast.statement.StatementVisitor;
 import dev.simbiot.ast.statement.declaration.Declaration;
@@ -102,9 +103,9 @@ public class SvelteLoader extends ProgramLoader<SvelteAst> {
             final Literal name = new Literal(id.getName());
 
             if (declarator.getInit() != null) {
-                result.add(new VariableDeclarator(id, new CallExpression("@attr", name, declarator.getInit())));
+                result.add(new VariableDeclarator(id, new CallExpression(new MemberExpression("@props", "getOrDefault"), name, declarator.getInit())));
             } else {
-                result.add(new VariableDeclarator(id, new CallExpression("@attr", name)));
+                result.add(new VariableDeclarator(id, new CallExpression(new MemberExpression("@props", "get"), name)));
             }
         }
 

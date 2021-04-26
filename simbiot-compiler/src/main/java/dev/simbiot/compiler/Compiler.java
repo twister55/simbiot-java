@@ -1,6 +1,5 @@
 package dev.simbiot.compiler;
 
-import dev.simbiot.ast.expression.CallExpression;
 import dev.simbiot.ast.expression.Expression;
 import dev.simbiot.ast.statement.BlockStatement;
 import dev.simbiot.ast.statement.ExpressionStatement;
@@ -13,7 +12,9 @@ import dev.simbiot.ast.statement.declaration.VariableDeclarator;
 import dev.simbiot.compiler.bytecode.GoTo;
 import dev.simbiot.compiler.bytecode.IfFalse;
 import dev.simbiot.compiler.bytecode.JumpTarget;
+import dev.simbiot.compiler.bytecode.StackChunk;
 import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.asm.AsmVisitorWrapper;
 import net.bytebuddy.description.method.ParameterDescription;
 import net.bytebuddy.description.method.ParameterList;
 import net.bytebuddy.description.type.TypeDescription.ForLoadedType;
@@ -23,8 +24,10 @@ import net.bytebuddy.dynamic.scaffold.InstrumentedType;
 import net.bytebuddy.dynamic.scaffold.subclass.ConstructorStrategy;
 import net.bytebuddy.implementation.Implementation;
 import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
+import net.bytebuddy.implementation.bytecode.ByteCodeAppender.Size;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.implementation.bytecode.member.MethodReturn;
+import net.bytebuddy.jar.asm.ClassWriter;
 import net.bytebuddy.jar.asm.Label;
 import static net.bytebuddy.matcher.ElementMatchers.isAbstract;
 
@@ -58,17 +61,15 @@ public abstract class Compiler {
     protected <T> Builder<T> createBuilder(CompilerContext ctx, Class<T> type) {
         return new ByteBuddy()
             .subclass(type, ConstructorStrategy.Default.NO_CONSTRUCTORS)
+            .visit(new AsmVisitorWrapper.ForDeclaredMethods().writerFlags(ClassWriter.COMPUTE_FRAMES))
             .name(ctx.getId().replace("-", "_"));
     }
 
-    private Implementation methodImplementation(CompilerContext ctx, Chunk result) {
+    private Implementation methodImplementation(CompilerContext context, StackChunk result) {
         return new Implementation() {
             @Override
             public ByteCodeAppender appender(Target target) {
-                return (methodVisitor, implementationContext, methodDescription) -> new ByteCodeAppender.Size(
-                    result.result().apply(methodVisitor, implementationContext).getMaximalSize(),
-                    methodDescription.getStackSize() + ctx.getLocalVarsCount()
-                );
+                return (visitor, ctx, method) -> new Size(result.apply(visitor, ctx).getMaximalSize(), context.getStackSize());
             }
 
             @Override
@@ -78,8 +79,8 @@ public abstract class Compiler {
         };
     }
 
-    private Chunk implement(CompilerContext ctx, Statement... statements) {
-        final Chunk result = new Chunk();
+    private StackChunk implement(CompilerContext ctx, Statement... statements) {
+        final StackChunk result = new StackChunk();
         for (Statement statement : statements) {
             implement(ctx, statement, result);
         }
@@ -87,15 +88,15 @@ public abstract class Compiler {
         return result;
     }
 
-    private void implement(CompilerContext ctx, Statement statement, Chunk result) {
+    private void implement(CompilerContext ctx, Statement statement, StackChunk result) {
         statement.accept(new Visitor(ctx, result));
     }
 
     private class Visitor extends StatementVisitor {
         private final CompilerContext ctx;
-        private final Chunk result;
+        private final StackChunk result;
 
-        private Visitor(CompilerContext ctx, Chunk result) {
+        private Visitor(CompilerContext ctx, StackChunk result) {
             this.ctx = ctx;
             this.result = result;
         }
@@ -108,7 +109,7 @@ public abstract class Compiler {
         @Override
         public void visit(VariableDeclaration statement) {
             for (VariableDeclarator declarator : statement.getDeclarations()) {
-                append(ctx.store(declarator.getId().getName(), resolver.resolve(ctx, declarator.getInit())));
+                append(ctx.declare(declarator.getId().getName(), resolver.resolve(ctx, declarator.getInit())));
             }
         }
 
@@ -122,8 +123,7 @@ public abstract class Compiler {
             final Label ifLabel = new Label();
             final Label elseLabel = new Label();
 
-            append(statement.getTest());
-            append(new CallExpression("@is"));
+            append(StackChunk.condition(resolver.resolve(ctx, statement.getTest())));
             append(new IfFalse(ifLabel));
             append(statement.getConsequent());
 

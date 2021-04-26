@@ -22,20 +22,20 @@ import net.bytebuddy.jar.asm.Opcodes;
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class IfFalse implements StackManipulation {
-    private final Label label;
+    private final Label destination;
 
-    public IfFalse(Label label) {
-        this.label = label;
+    public IfFalse(Label destination) {
+        this.destination = destination;
     }
 
     @Override
     public boolean isValid() {
-        return true;
+        return destination != null;
     }
 
     @Override
     public Size apply(MethodVisitor mv, Context ctx) {
-        mv.visitJumpInsn(Opcodes.IFEQ, label);
+        mv.visitJumpInsn(Opcodes.IFEQ, destination);
         return new Size(-1, 0);
     }
 }

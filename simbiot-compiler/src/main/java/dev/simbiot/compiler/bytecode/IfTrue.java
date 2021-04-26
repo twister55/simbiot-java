@@ -31,7 +31,7 @@ public final class IfTrue implements StackManipulation {
 
     @Override
     public boolean isValid() {
-        return true;
+        return destination != null;
     }
 
     @Override

@@ -8,7 +8,7 @@ import dev.simbiot.ast.expression.Expression;
 import dev.simbiot.ast.expression.Identifier;
 import dev.simbiot.ast.expression.Literal;
 import dev.simbiot.compiler.BuiltIn;
-import dev.simbiot.compiler.Chunk;
+import dev.simbiot.compiler.bytecode.StackChunk;
 import dev.simbiot.compiler.CompilerContext;
 import dev.simbiot.compiler.CompilingProvider;
 import dev.simbiot.compiler.ExpressionResolver;
@@ -43,7 +43,7 @@ public class EndorphinProvider extends CompilingProvider {
         }
 
         @Override
-        public Chunk resolve(CompilerContext ctx, Identifier expression) {
+        public StackChunk resolve(CompilerContext ctx, Identifier expression) {
             if (expression instanceof IdentifierWithContext) {
                 final IdentifierWithContext.Context context = ((IdentifierWithContext) expression).getContext();
 
@@ -56,7 +56,7 @@ public class EndorphinProvider extends CompilingProvider {
         }
 
         @Override
-        public Chunk resolve(CompilerContext ctx, CallExpression expression) {
+        public StackChunk resolve(CompilerContext ctx, CallExpression expression) {
             final Expression callee = expression.getCallee();
 
             if (callee instanceof IdentifierWithContext) {

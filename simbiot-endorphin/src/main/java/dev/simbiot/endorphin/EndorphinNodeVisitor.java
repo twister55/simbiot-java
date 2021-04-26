@@ -15,6 +15,7 @@ import dev.simbiot.ast.expression.Identifier;
 import dev.simbiot.ast.expression.Literal;
 import dev.simbiot.ast.expression.MemberExpression;
 import dev.simbiot.ast.expression.ObjectExpression;
+import dev.simbiot.ast.expression.UpdateExpression;
 import dev.simbiot.ast.pattern.Property;
 import dev.simbiot.ast.statement.BlockStatement;
 import dev.simbiot.ast.statement.ExpressionStatement;
@@ -166,12 +167,14 @@ public class EndorphinNodeVisitor implements Visitor {
     public void visit(ENDForEachStatement node) {
         final String iteratorName = "iterator" + System.nanoTime();
         final Expression expression = ((ExpressionStatement) node.getSelect().getBody()[0]).getExpression();
+        builder.append(new VariableDeclaration(node.getIndexName(), new Literal(0)));
         builder.append(new VariableDeclaration(iteratorName, new CallExpression("@iterator", expression)));
         builder.append(new WhileStatement(
             new CallExpression(iteratorName, "hasNext"),
             new BlockStatement(
                 new VariableDeclaration(node.getValueName(), new CallExpression(iteratorName, "next")),
-                inner(node.getBody())
+                inner(node.getBody()),
+                new ExpressionStatement(UpdateExpression.increment(new Identifier(node.getIndexName())))
             )
         ));
     }

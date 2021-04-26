@@ -6,54 +6,52 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import net.bytebuddy.description.type.TypeDescription;
+import dev.simbiot.compiler.bytecode.StackChunk;
+import net.bytebuddy.description.type.TypeDescription.ForLoadedType;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.implementation.bytecode.collection.ArrayAccess;
+import net.bytebuddy.implementation.bytecode.collection.ArrayFactory;
 import net.bytebuddy.implementation.bytecode.constant.IntegerConstant;
+import static dev.simbiot.compiler.bytecode.StackChunk.NULL;
 import static net.bytebuddy.description.type.TypeDescription.Generic.OfNonGenericType.ForLoadedType.of;
-import static net.bytebuddy.implementation.bytecode.collection.ArrayFactory.forType;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class ScopedContext extends CompilerContext {
-    private final Map<String, Chunk> vars;
+public class InlineFunctionContext extends CompilerContext {
+    private final Map<String, StackChunk> vars;
 
-    public ScopedContext(CompilerContext ctx, int index) {
+    public InlineFunctionContext(CompilerContext ctx, int index) {
         super(ctx.getId() + "$Fn$" + index, ctx);
         this.vars = new LinkedHashMap<>();
     }
 
-    public StackManipulation vars(Function<String, Chunk> mapper) {
-        final List<StackManipulation> values = vars.keySet().stream()
-            .map(mapper)
-            .map(Chunk::result)
-            .collect(Collectors.toList());
-
-        return forType(TypeDescription.ForLoadedType.of(Object.class).asGenericType()).withValues(values);
+    public StackManipulation vars(Function<String, StackChunk> mapper) {
+        final List<StackManipulation> vars = this.vars.keySet().stream().map(mapper).collect(Collectors.toList());
+        return ArrayFactory.forType(ForLoadedType.of(Object.class).asGenericType()).withValues(vars);
     }
 
     @Override
-    public Chunk writer() {
+    public StackChunk writer() {
         return field("writer");
     }
 
     @Override
-    public Chunk props() {
+    public StackChunk props() {
         return field("props");
     }
 
     @Override
-    public Chunk slots() {
+    public StackChunk slots() {
         return field("slots");
     }
 
     @Override
-    protected Chunk ref(String name) {
-        final Chunk ref = super.ref(name);
+    protected StackChunk localVar(String name) {
+        final StackChunk var = super.localVar(name);
 
-        if (ref != Chunk.NULL) {
-            return ref;
+        if (var != NULL) {
+            return var;
         }
 
         return vars.computeIfAbsent(name, key -> {

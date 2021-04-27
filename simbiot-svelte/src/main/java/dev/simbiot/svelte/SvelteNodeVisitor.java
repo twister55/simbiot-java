@@ -242,7 +242,7 @@ public class SvelteNodeVisitor implements Visitor {
         Statement incrementIndex = Statement.EMPTY;
         if (indexName != null) {
             incrementIndex = new ExpressionStatement(
-                new UpdateExpression(Operator.INCREMENT, new Identifier(indexName), false)
+                new UpdateExpression(new Identifier(indexName), Operator.INCREMENT, false)
             );
         }
 

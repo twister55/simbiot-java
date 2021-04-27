@@ -1,7 +1,13 @@
-dependencies {
-    compile project(':simbiot')
-    compile project(':simbiot-ast')
-    compile project(':simbiot-compiler')
+description = "Simbiot Endorphin extension $version"
+archivesBaseName = 'simbiot-endorphin'
 
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.0'
+apply plugin: 'java-library'
+
+dependencies {
+    api project(':simbiot')
+    api project(':simbiot-ast')
+    api project(':simbiot-compiler')
+
+    implementation group: 'org.jetbrains', name: 'annotations', version: '16.0.1'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.0'
 }

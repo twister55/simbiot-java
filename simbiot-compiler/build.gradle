@@ -1,6 +1,12 @@
-dependencies {
-    compile project(':simbiot')
-    compile project(':simbiot-ast')
+description = "Simbiot compiler $version"
+archivesBaseName = 'simbiot-compiler'
 
-    compile group: 'net.bytebuddy', name: 'byte-buddy', version: '1.10.19'
+apply plugin: 'java-library'
+
+dependencies {
+    implementation project(':simbiot')
+    implementation project(':simbiot-ast')
+
+    implementation group: 'org.jetbrains', name: 'annotations', version: '16.0.1'
+    implementation group: 'net.bytebuddy', name: 'byte-buddy', version: '1.10.19'
 }

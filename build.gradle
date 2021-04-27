@@ -1,19 +1,65 @@
-plugins {
-    id 'java'
-}
+buildscript {
+    ext {
+        artifactGroup = 'dev.simbiot'
+        artifactVersion = '0.1.0'
+    }
 
-group 'dev.simbiot'
-version '0.0.1'
-sourceCompatibility = '8'
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        jcenter()
+    }
+}
 
 subprojects {
     apply plugin: 'java'
+    apply plugin: 'maven-publish'
+    apply plugin: 'signing'
+
+    group = "${artifactGroup}"
+    version = "${artifactVersion}"
+    description = "Simbiot $version"
+
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+    compileJava.options.encoding = 'UTF-8'
 
     repositories {
+        mavenLocal()
         mavenCentral()
     }
 
+    publishing {
+        repositories {
+            maven {
+                name = "GitHubPackages"
+                url = uri("https://maven.pkg.github.com/twister55/simbiot-java")
+                credentials {
+                    username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
+                    password = project.findProperty("gpr.key") ?: System.getenv("TOKEN")
+                }
+            }
+        }
+        publications {
+            gpr(MavenPublication) {
+                from(components.java)
+
+            }
+        }
+    }
+
     dependencies {
-        testCompile group: 'junit', name: 'junit', version: '4.12'
+        testImplementation group: 'junit', name: 'junit', version: '4.12'
+    }
+
+    defaultTasks 'clean', 'build'
+
+    compileJava {
+        sourceCompatibility = 1.8
+        targetCompatibility = 1.8
+    }
+
+    test {
+        useJUnitPlatform()
     }
 }

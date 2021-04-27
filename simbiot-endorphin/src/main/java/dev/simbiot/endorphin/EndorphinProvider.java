@@ -21,6 +21,10 @@ import dev.simbiot.runtime.END;
  */
 public class EndorphinProvider extends CompilingProvider {
 
+    public EndorphinProvider() {
+        this(new EndorphinLoader());
+    }
+
     public EndorphinProvider(ProgramLoader<?> loader) {
         super(loader);
         getMethodBindings().bindInternal(END.class);

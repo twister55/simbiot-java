@@ -54,7 +54,7 @@ public enum PrimitiveBoxing implements StackManipulation {
         } else if (typeDefinition.represents(double.class)) {
             return DOUBLE;
         } else {
-            throw new IllegalArgumentException("Not a non-void, primitive type: " + typeDefinition);
+            throw new IllegalArgumentException("Not valid type for boxing: " + typeDefinition);
         }
     }
 

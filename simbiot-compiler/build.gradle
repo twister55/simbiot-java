@@ -4,9 +4,9 @@ archivesBaseName = 'simbiot-compiler'
 apply plugin: 'java-library'
 
 dependencies {
-    implementation project(':simbiot')
-    implementation project(':simbiot-ast')
+    api project(':simbiot')
+    api project(':simbiot-ast')
+    api group: 'net.bytebuddy', name: 'byte-buddy', version: '1.10.19'
 
     implementation group: 'org.jetbrains', name: 'annotations', version: '16.0.1'
-    implementation group: 'net.bytebuddy', name: 'byte-buddy', version: '1.10.19'
 }

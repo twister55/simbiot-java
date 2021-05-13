@@ -11,7 +11,7 @@ public class HTML {
     private static final Set<String> SELF_CLOSING_TAGS = new HashSet<>(Arrays.asList("area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"));
 
     public static boolean isSelfClosing(String tagName) {
-        return SELF_CLOSING_TAGS.contains(tagName) || tagName.toLowerCase().equals("!doctype");
+        return SELF_CLOSING_TAGS.contains(tagName) || tagName.equalsIgnoreCase("!doctype");
     }
 
     public static String escape(Object value) {

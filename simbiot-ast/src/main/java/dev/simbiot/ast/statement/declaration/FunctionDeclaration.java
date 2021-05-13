@@ -9,6 +9,7 @@ import dev.simbiot.ast.expression.BaseFunction;
 import dev.simbiot.ast.expression.Identifier;
 import dev.simbiot.ast.pattern.Pattern;
 import dev.simbiot.ast.statement.BlockStatement;
+import dev.simbiot.ast.statement.Statement;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
@@ -16,6 +17,10 @@ import dev.simbiot.ast.statement.BlockStatement;
 public class FunctionDeclaration extends BaseFunction implements Declaration {
     private final Identifier id;
     private final BlockStatement body;
+
+    public FunctionDeclaration(String id, Statement body, Pattern[] params) {
+        this(new Identifier(id), new BlockStatement(body), params, false, false);
+    }
 
     @JsonCreator
     public FunctionDeclaration(@JsonProperty("id") Identifier id,

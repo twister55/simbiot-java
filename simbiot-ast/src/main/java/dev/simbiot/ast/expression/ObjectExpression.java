@@ -1,5 +1,6 @@
 package dev.simbiot.ast.expression;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -14,6 +15,10 @@ import dev.simbiot.ast.pattern.Property;
  */
 public class ObjectExpression extends BaseNode implements Expression, Iterable<Property> {
     private final List<Property> properties;
+
+    public ObjectExpression() {
+        this(Collections.emptyList());
+    }
 
     @JsonCreator
     public ObjectExpression(@JsonProperty("properties") List<Property> properties) {

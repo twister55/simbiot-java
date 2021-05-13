@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import dev.simbiot.ast.Node;
 import dev.simbiot.ast.pattern.Pattern;
+import dev.simbiot.ast.statement.BlockStatement;
 import dev.simbiot.ast.statement.ReturnStatement;
 import dev.simbiot.ast.statement.Statement;
 
@@ -47,12 +48,12 @@ public class ArrowFunctionExpression extends BaseFunction implements Expression 
         visitor.visit(this);
     }
 
-    public Statement getBody() {
+    public BlockStatement getBody() {
         if (expression) {
-            return new ReturnStatement((Expression) body);
+            return new BlockStatement(new ReturnStatement((Expression) body));
         }
 
-        return (Statement) body;
+        return body instanceof BlockStatement ? (BlockStatement) body : new BlockStatement((Statement) body);
     }
 
     public boolean isExpression() {

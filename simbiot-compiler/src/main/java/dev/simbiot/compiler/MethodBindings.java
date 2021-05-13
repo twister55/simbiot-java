@@ -5,8 +5,6 @@ import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 
-import dev.simbiot.runtime.HTML;
-import dev.simbiot.runtime.Objects;
 import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.description.method.MethodDescription.ForLoadedMethod;
 
@@ -18,7 +16,6 @@ public class MethodBindings {
 
     public MethodBindings() {
         this.mapping = new HashMap<>();
-        bindInternal(HTML.class, Objects.class);
     }
 
     public MethodDescription get(String name) {

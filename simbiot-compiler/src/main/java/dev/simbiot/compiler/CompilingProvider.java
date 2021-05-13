@@ -10,6 +10,21 @@ import dev.simbiot.Component;
 import dev.simbiot.ComponentProvider;
 import dev.simbiot.ast.Program;
 import dev.simbiot.ast.ProgramLoader;
+import dev.simbiot.compiler.expression.ArrayExpressionHandler;
+import dev.simbiot.compiler.expression.ArrowFunctionExpressionHandler;
+import dev.simbiot.compiler.expression.BinaryExpressionHandler;
+import dev.simbiot.compiler.expression.CallExpressionHandler;
+import dev.simbiot.compiler.expression.ConditionalExpressionHandler;
+import dev.simbiot.compiler.expression.ExpressionResolver;
+import dev.simbiot.compiler.expression.FunctionExpressionHandler;
+import dev.simbiot.compiler.expression.IdentifierHandler;
+import dev.simbiot.compiler.expression.LiteralHandler;
+import dev.simbiot.compiler.expression.MemberExpressionHandler;
+import dev.simbiot.compiler.expression.ObjectExpressionHandler;
+import dev.simbiot.compiler.expression.UnaryExpressionHandler;
+import dev.simbiot.compiler.expression.UpdateExpressionHandler;
+import dev.simbiot.runtime.HTML;
+import dev.simbiot.runtime.Objects;
 import net.bytebuddy.dynamic.DynamicType.Unloaded;
 import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
 import net.bytebuddy.dynamic.loading.InjectionClassLoader;
@@ -19,14 +34,12 @@ import net.bytebuddy.dynamic.loading.InjectionClassLoader;
  */
 public class CompilingProvider implements ComponentProvider {
     private final ProgramLoader<?> loader;
-    private final MethodBindings bindings;
     private final ComponentCompiler compiler;
     private final Map<String, Component> cache;
 
     public CompilingProvider(ProgramLoader<?> loader) {
         this.loader = loader;
-        this.bindings = new MethodBindings();
-        this.compiler = new ComponentCompiler(createExpressionResolver());
+        this.compiler = new ComponentCompiler();
         this.cache = new ConcurrentHashMap<>();
     }
 
@@ -36,7 +49,7 @@ public class CompilingProvider implements ComponentProvider {
             Component component = this.cache.get(id);
 
             if (component == null) {
-                component = this.createComponent(id);
+                component = createComponent(id);
                 this.cache.put(id, component);
             }
 
@@ -49,21 +62,35 @@ public class CompilingProvider implements ComponentProvider {
         }
     }
 
-    protected MethodBindings getMethodBindings() {
-        return bindings;
-    }
-
-    protected ExpressionResolver createExpressionResolver() {
-        return new ExpressionResolver(getMethodBindings());
-    }
-
-    private Component createComponent(String id) {
-        final CompilerContext context = new CompilerContext(id);
+    protected Component createComponent(String id) {
+        final CompilerContext context = new CompilerContext(id, createMethodBindings(), createExpressionResolver());
         try {
             return createInstance(loadClass(context), getDependencies(context));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    protected MethodBindings createMethodBindings() {
+        final MethodBindings bindings = new MethodBindings();
+        bindings.bindInternal(HTML.class, Objects.class);
+        return bindings;
+    }
+
+    protected ExpressionResolver createExpressionResolver() {
+        return new ExpressionResolver()
+            .withHandler("ArrayExpression", new ArrayExpressionHandler())
+            .withHandler("ArrowFunctionExpression", new ArrowFunctionExpressionHandler())
+            .withHandler("BinaryExpression", new BinaryExpressionHandler())
+            .withHandler("CallExpression", new CallExpressionHandler())
+            .withHandler("ConditionalExpression", new ConditionalExpressionHandler())
+            .withHandler("FunctionExpression", new FunctionExpressionHandler())
+            .withHandler("Identifier", new IdentifierHandler())
+            .withHandler("Literal", new LiteralHandler())
+            .withHandler("MemberExpression", new MemberExpressionHandler())
+            .withHandler("ObjectExpression", new ObjectExpressionHandler())
+            .withHandler("UnaryExpression", new UnaryExpressionHandler())
+            .withHandler("UpdateExpression", new UpdateExpressionHandler());
     }
 
     private Component createInstance(Class<? extends Component> type, Component[] dependencies) {

@@ -31,10 +31,6 @@ import static net.bytebuddy.matcher.ElementMatchers.takesArguments;
  */
 public class ComponentCompiler extends Compiler {
 
-    public ComponentCompiler(ExpressionResolver resolver) {
-        super(resolver);
-    }
-
     public DynamicType.Unloaded<Component> compile(CompilerContext ctx, Program program) {
         return compile(ctx, Component.class, program.getBody());
     }

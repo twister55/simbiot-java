@@ -9,7 +9,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.web.servlet.view.AbstractTemplateView;
 
 import dev.simbiot.Component;
-import dev.simbiot.Component.Slot;
+import dev.simbiot.Function;
 import dev.simbiot.runtime.StreamWriter;
 import dev.simbiot.runtime.Writer;
 
@@ -36,9 +36,10 @@ public class SimbiotView extends AbstractTemplateView {
 
     private void render(Map<String, Object> model, HttpServletResponse response) throws Exception {
         final Writer writer = new StreamWriter(response.getOutputStream());
-        final Map<String, Object> props = Collections.emptyMap();
-        final Map<String, Slot> slots = Collections.singletonMap("body", () -> component.render(writer, model, Collections.emptyMap()));
+        final Map<String, Object> props = Collections.singletonMap(
+            "slot:body", (Function) (args) -> component.render(writer, model)
+        );
 
-        this.template.render(writer, props, slots);
+        this.template.render(writer, props);
     }
 }

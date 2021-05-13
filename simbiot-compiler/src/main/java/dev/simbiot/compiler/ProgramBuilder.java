@@ -7,7 +7,9 @@ import dev.simbiot.ast.Program;
 import dev.simbiot.ast.SourceType;
 import dev.simbiot.ast.expression.CallExpression;
 import dev.simbiot.ast.expression.Expression;
+import dev.simbiot.ast.expression.Identifier;
 import dev.simbiot.ast.expression.Literal;
+import dev.simbiot.ast.pattern.Property;
 import dev.simbiot.ast.statement.BlockStatement;
 import dev.simbiot.ast.statement.EmptyStatement;
 import dev.simbiot.ast.statement.ExpressionStatement;
@@ -40,6 +42,27 @@ public class ProgramBuilder {
         }
 
         call(BuiltIn.WRITE, escape ? BuiltIn.escape(expression) : expression);
+    }
+
+    public void writeElementStart(String name) {
+        write("<" + name);
+    }
+
+    public void writeAttributes(List<Property> attributes) {
+        for (Property attribute : attributes) {
+            final Identifier key = (Identifier) attribute.getKey();
+            final Expression value = attribute.getValue();
+
+            if (!key.getName().contains(":")) {
+                write(" " + key.getName());
+
+                if (value != null && !value.equals(Literal.NULL)) {
+                    write("=\"");
+                    write(attribute.getValue(), true);
+                    write("\"");
+                }
+            }
+        }
     }
 
     public void writeElementEnd(String name) {

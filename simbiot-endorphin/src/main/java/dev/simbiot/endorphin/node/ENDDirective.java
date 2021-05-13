@@ -1,5 +1,6 @@
 package dev.simbiot.endorphin.node;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import dev.simbiot.ast.BaseNode;
@@ -8,18 +9,26 @@ import dev.simbiot.ast.expression.Expression;
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class ENDAttribute extends BaseNode {
-    private final AttributeName name;
+public class ENDDirective extends BaseNode {
+    private final String prefix;
+    private final String name;
     private final PlainStatement value;
 
-    public ENDAttribute(@JsonProperty("name") AttributeName name,
+    @JsonCreator
+    public ENDDirective(@JsonProperty("prefix") String prefix,
+                        @JsonProperty("name") String name,
                         @JsonProperty("value") PlainStatement value) {
-        super("ENDAttribute");
+        super("ENDDirective");
+        this.prefix = prefix;
         this.name = name;
         this.value = value;
     }
 
-    public AttributeName getName() {
+    public String getPrefix() {
+        return prefix;
+    }
+
+    public String getName() {
         return name;
     }
 

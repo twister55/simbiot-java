@@ -1,6 +1,7 @@
 package dev.simbiot;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -18,9 +19,9 @@ class Template implements Component {
     }
 
     @Override
-    public void render(Writer writer, Map<String, Object> props, Map<String, Slot> slots) throws IOException {
+    public void render(Writer writer, Map<String, Object> props) throws IOException {
         writer.write(parts[0]);
-        slots.getOrDefault("body", Slot.EMPTY).render();
+        ((Function) props.get("slot:body")).apply(Collections.emptyMap());
         writer.write(parts[1]);
     }
 }

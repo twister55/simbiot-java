@@ -23,4 +23,8 @@ public class ENDGetter extends BaseNode implements Expression {
     public void accept(Visitor visitor) {
         visitor.visit(new CallExpression("@getter", path));
     }
+
+    public Expression[] getPath() {
+        return path;
+    }
 }

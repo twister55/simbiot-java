@@ -17,20 +17,24 @@ public class END {
 
         if (!props.isEmpty()) {
             for (Map.Entry<String, Object> entry : props.entrySet()) {
-                final String propName = entry.getKey();
+                final String propKey = entry.getKey();
                 final Object propValue = entry.getValue();
 
-                if ("@hash".equals(propName)) {
-                    builder.append(" ").append(propValue).append(" ");
-                } else if (propValue != null) {
+                if (propKey.contains(":")) {
+                    continue;
+                }
+
+                builder.append(" ").append(propKey);
+
+                if (propValue != null) {
                     final Class<?> propValueClass = propValue.getClass();
 
                     if (propValue instanceof String || propValueClass.isPrimitive()) {
-                        builder.append(" ").append(propName).append("=\"").append(propValue).append("\" ");
+                        builder.append("=\"").append(propValue).append("\"");
                     } else if (propValue instanceof Collection || propValueClass.isArray()) {
-                        builder.append(" ").append(propName).append("=\"[]\" ");
+                        builder.append("=\"[]\"");
                     } else {
-                        builder.append(" ").append(propName).append("=\"{}\" ");
+                        builder.append("=\"{}\"");
                     }
                 }
             }

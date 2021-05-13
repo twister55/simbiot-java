@@ -1,5 +1,6 @@
 package dev.simbiot.ast.statement;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -15,19 +16,18 @@ import static java.util.Arrays.asList;
 public class BlockStatement extends BaseNode implements Statement, Iterable<Statement> {
     private final List<Statement> body;
 
+    public BlockStatement(Statement... body) {
+        this(asList(body));
+    }
+
     @JsonCreator
     public BlockStatement(@JsonProperty("body") List<Statement> body) {
         this("BlockStatement", body);
     }
 
-
-    public BlockStatement(Statement... body) {
-        this("BlockStatement", asList(body));
-    }
-
     protected BlockStatement(String type, List<Statement> body) {
         super(type);
-        this.body = body;
+        this.body = new ArrayList<>(body);
     }
 
     @Override
@@ -38,5 +38,15 @@ public class BlockStatement extends BaseNode implements Statement, Iterable<Stat
     @Override
     public Iterator<Statement> iterator() {
         return body.iterator();
+    }
+
+    public BlockStatement prepend(Statement statement) {
+        body.add(0, statement);
+        return this;
+    }
+
+    public BlockStatement append(Statement statement) {
+        body.add(statement);
+        return this;
     }
 }

@@ -21,8 +21,9 @@ public class BuiltIn {
     public static final MemberExpression PROPS_GET = new MemberExpression(PROPS, new Identifier("get"));
     public static final MemberExpression PROPS_GET_OR_DEFAULT = new MemberExpression(PROPS, new Identifier("getOrDefault"));
 
-    public static final Identifier SLOTS = new Identifier("@slots");
-    public static final MemberExpression GET_SLOT = new MemberExpression(SLOTS, new Identifier("getOrDefault"));
+    public static final Identifier ARG = new Identifier("@arg0");
+    public static final MemberExpression ARG_GET = new MemberExpression(ARG, new Identifier("get"));
+    public static final MemberExpression ARG_GET_OR_DEFAULT = new MemberExpression(ARG, new Identifier("getOrDefault"));
 
     public static Expression escape(Expression arg) {
         return new CallExpression("@escape", arg);

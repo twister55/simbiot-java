@@ -2,20 +2,20 @@ package dev.simbiot.ast.pattern;
 
 import dev.simbiot.ast.BaseNode;
 import dev.simbiot.ast.Node;
-import dev.simbiot.ast.expression.Identifier;
+import dev.simbiot.ast.expression.Expression;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public abstract class BaseProperty<V extends Node> extends BaseNode {
     private final Kind kind;
-    private final Identifier key;
+    private final Expression key;
     private final V value;
     private final boolean method;
     private final boolean shorthand;
     private final boolean computed;
 
-    protected BaseProperty(String type, Kind kind, Identifier key, V value, boolean method, boolean shorthand, boolean computed) {
+    protected BaseProperty(String type, Kind kind, Expression key, V value, boolean method, boolean shorthand, boolean computed) {
         super(type);
         this.kind = kind;
         this.key = key;
@@ -29,7 +29,7 @@ public abstract class BaseProperty<V extends Node> extends BaseNode {
         return kind;
     }
 
-    public Identifier getKey() {
+    public Expression getKey() {
         return key;
     }
 

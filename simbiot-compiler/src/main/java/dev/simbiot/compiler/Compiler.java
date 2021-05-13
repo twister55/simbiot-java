@@ -1,12 +1,15 @@
 package dev.simbiot.compiler;
 
 import dev.simbiot.ast.expression.Expression;
+import dev.simbiot.ast.expression.FunctionExpression;
+import dev.simbiot.ast.expression.Identifier;
 import dev.simbiot.ast.statement.BlockStatement;
 import dev.simbiot.ast.statement.ExpressionStatement;
 import dev.simbiot.ast.statement.IfStatement;
 import dev.simbiot.ast.statement.Statement;
 import dev.simbiot.ast.statement.StatementVisitor;
 import dev.simbiot.ast.statement.WhileStatement;
+import dev.simbiot.ast.statement.declaration.FunctionDeclaration;
 import dev.simbiot.ast.statement.declaration.VariableDeclaration;
 import dev.simbiot.ast.statement.declaration.VariableDeclarator;
 import dev.simbiot.compiler.bytecode.GoTo;
@@ -35,11 +38,6 @@ import static net.bytebuddy.matcher.ElementMatchers.isAbstract;
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public abstract class Compiler {
-    private final ExpressionResolver resolver;
-
-    protected Compiler(ExpressionResolver resolver) {
-        this.resolver = resolver;
-    }
 
     protected <T> Unloaded<T> compile(CompilerContext ctx, Class<T> type, Statement... statements) {
         final Builder<T> builder = createBuilder(ctx, type);
@@ -107,9 +105,19 @@ public abstract class Compiler {
         }
 
         @Override
+        public void visit(FunctionDeclaration statement) {
+            final Identifier id = statement.getId();
+            final Expression expression = new FunctionExpression(
+                statement.getId(), statement.getBody(), statement.getParams(), statement.isGenerator(), statement.isAsync()
+            );
+
+            append(ctx.declare(new VariableDeclarator(id, expression)));
+        }
+
+        @Override
         public void visit(VariableDeclaration statement) {
             for (VariableDeclarator declarator : statement.getDeclarations()) {
-                append(ctx.declare(declarator.getId().getName(), resolver.resolve(ctx, declarator.getInit())));
+                append(ctx.declare(declarator));
             }
         }
 
@@ -123,7 +131,7 @@ public abstract class Compiler {
             final Label ifLabel = new Label();
             final Label elseLabel = new Label();
 
-            append(StackChunk.condition(resolver.resolve(ctx, statement.getTest())));
+            append(StackChunk.condition(ctx.resolve(statement.getTest())));
             append(new IfFalse(ifLabel));
             append(statement.getConsequent());
 
@@ -155,7 +163,7 @@ public abstract class Compiler {
         }
 
         private void append(Expression expression) {
-            result.append(resolver.resolve(ctx, expression));
+            result.append(ctx.resolve(expression));
         }
 
         private void append(StackManipulation manipulation) {

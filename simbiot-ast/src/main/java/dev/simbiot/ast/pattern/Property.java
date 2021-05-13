@@ -21,7 +21,7 @@ public class Property extends BaseProperty<Expression> {
 
     @JsonCreator
     public Property(@JsonProperty("kind") Kind kind,
-                    @JsonProperty("key") Identifier key,
+                    @JsonProperty("key") Expression key,
                     @JsonProperty("value") Expression value,
                     @JsonProperty("method") boolean method,
                     @JsonProperty("shorthand") boolean shorthand,

@@ -18,10 +18,10 @@ import static net.bytebuddy.description.type.TypeDescription.Generic.OfNonGeneri
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class InlineFunctionContext extends CompilerContext {
+public class FunctionContext extends CompilerContext {
     private final Map<String, StackChunk> vars;
 
-    public InlineFunctionContext(CompilerContext ctx, int index) {
+    public FunctionContext(CompilerContext ctx, int index) {
         super(ctx.getId() + "$Fn$" + index, ctx);
         this.vars = new LinkedHashMap<>();
     }
@@ -42,13 +42,8 @@ public class InlineFunctionContext extends CompilerContext {
     }
 
     @Override
-    public StackChunk slots() {
-        return field("slots");
-    }
-
-    @Override
-    protected StackChunk localVar(String name) {
-        final StackChunk var = super.localVar(name);
+    public StackChunk resolve(String name) {
+        final StackChunk var = super.resolve(name);
 
         if (var != NULL) {
             return var;
@@ -56,7 +51,7 @@ public class InlineFunctionContext extends CompilerContext {
 
         return vars.computeIfAbsent(name, key -> {
             final int index = vars.size();
-            return field("vars")
+            return field("scope")
                 .append(IntegerConstant.forValue(index))
                 .append(ArrayAccess.REFERENCE.load(), of(Object.class));
         });

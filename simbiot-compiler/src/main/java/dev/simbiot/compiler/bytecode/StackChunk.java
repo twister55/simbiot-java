@@ -1,8 +1,12 @@
 package dev.simbiot.compiler.bytecode;
 
+import java.util.List;
+
 import dev.simbiot.runtime.Objects;
 import net.bytebuddy.description.field.FieldDescription;
+import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.description.method.MethodDescription.InDefinedShape;
+import net.bytebuddy.description.method.MethodList;
 import net.bytebuddy.description.type.TypeDescription.ForLoadedType;
 import net.bytebuddy.description.type.TypeDescription.Generic;
 import net.bytebuddy.description.type.TypeDescription.Generic.OfNonGenericType;
@@ -15,7 +19,10 @@ import net.bytebuddy.implementation.bytecode.member.MethodInvocation;
 import net.bytebuddy.implementation.bytecode.member.MethodVariableAccess;
 import net.bytebuddy.jar.asm.Label;
 import net.bytebuddy.jar.asm.MethodVisitor;
+import static net.bytebuddy.implementation.bytecode.collection.ArrayFactory.forType;
 import static net.bytebuddy.matcher.ElementMatchers.named;
+import static net.bytebuddy.matcher.ElementMatchers.takesArgument;
+import static net.bytebuddy.matcher.ElementMatchers.takesArguments;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
@@ -73,6 +80,10 @@ public class StackChunk implements StackManipulation {
             .append(new JumpTarget(elseLabel), boolean.class);
     }
 
+    public static StackChunk call(MethodDescription method, List<StackChunk> arguments) {
+        return new StackChunk().invoke(method, arguments);
+    }
+
     private Generic type;
     private StackManipulation manipulation;
 
@@ -100,6 +111,11 @@ public class StackChunk implements StackManipulation {
         return manipulation.apply(methodVisitor, implementationContext);
     }
 
+    public StackChunk as(Class<?> type) {
+        this.type = ForLoadedType.of(type).asGenericType();
+        return this;
+    }
+
     public Generic type() {
         return type;
     }
@@ -121,4 +137,43 @@ public class StackChunk implements StackManipulation {
     public StackChunk append(StackManipulation manipulation, Class<?> type) {
         return append(manipulation, OfNonGenericType.ForLoadedType.of(type));
     }
+
+    public StackChunk invoke(String method, List<StackChunk> arguments) {
+        final MethodList<MethodDescription.InGenericShape> methods = type.getDeclaredMethods()
+            .filter(named(method));
+
+        if (methods.size() == 1) {
+            return invoke(methods.getOnly(), arguments);
+        }
+
+        MethodList<MethodDescription.InGenericShape> filtered = methods.filter(takesArguments(arguments.size()));
+        if (filtered.size() == 1) {
+            return invoke(methods.getOnly(), arguments);
+        }
+
+        filtered = methods.filter(takesArgument(0, arguments.get(0).type().asErasure()));
+        if (filtered.size() == 1) {
+            return invoke(filtered.getOnly(), arguments);
+        }
+
+        filtered = methods.filter(takesArgument(0, Object.class));
+        if (filtered.size() == 1) {
+            return invoke(filtered.getOnly(), arguments);
+        }
+
+        throw new IllegalStateException("method " + method + " can not be resolved");
+    }
+
+    private StackChunk invoke(MethodDescription method, List<StackChunk> arguments) {
+        if (method.isVarArgs()) {
+            append(forType(ForLoadedType.of(Object.class).asGenericType()).withValues(arguments));
+        } else {
+            for (final StackChunk arg : arguments) {
+                append(arg);
+            }
+        }
+
+        return append(MethodInvocation.invoke(method), method.getReturnType());
+    }
+
 }

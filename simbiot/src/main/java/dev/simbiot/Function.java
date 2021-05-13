@@ -3,12 +3,10 @@ package dev.simbiot;
 import java.io.IOException;
 import java.util.Map;
 
-import dev.simbiot.runtime.Writer;
-
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public interface Component {
+public interface Function {
 
-    void render(Writer writer, Map<String, Object> props) throws IOException;
+    void apply(Map<String, Object> args) throws IOException;
 }

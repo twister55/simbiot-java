@@ -1,5 +1,7 @@
 package dev.simbiot.compiler.expression;
 
+import java.util.Objects;
+
 import dev.simbiot.ast.UnsupportedNodeException;
 import dev.simbiot.ast.expression.BinaryExpression;
 import dev.simbiot.ast.expression.Expression;
@@ -8,13 +10,24 @@ import dev.simbiot.compiler.bytecode.GoTo;
 import dev.simbiot.compiler.bytecode.IfEqual;
 import dev.simbiot.compiler.bytecode.JumpTarget;
 import dev.simbiot.compiler.bytecode.StackChunk;
+import net.bytebuddy.description.method.MethodDescription;
+import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.implementation.bytecode.constant.IntegerConstant;
 import net.bytebuddy.jar.asm.Label;
+import static net.bytebuddy.matcher.ElementMatchers.named;
 
 /**
  * @author <a href="mailto:vadim.eliseev@corp.mail.ru">Vadim Eliseev</a>
  */
 public class BinaryExpressionHandler implements ExpressionHandler<BinaryExpression> {
+
+    /**
+     * The {@link Objects#equals(Object, Object)} method.
+     */
+    public static final MethodDescription.InDefinedShape EQUALS = new TypeDescription.ForLoadedType(Objects.class)
+        .getDeclaredMethods()
+        .filter(named("equals"))
+        .getOnly();
 
     @Override
     public StackChunk handle(CompilerContext ctx, BinaryExpression expression) {
@@ -39,7 +52,7 @@ public class BinaryExpressionHandler implements ExpressionHandler<BinaryExpressi
                         .append(new JumpTarget(elseLabel), boolean.class);
                 }
 
-                return StackChunk.call(StackChunk.EQUALS, ctx.resolve(new Expression[] {
+                return StackChunk.call(EQUALS, ctx.resolve(new Expression[] {
                     expression.getLeft(), expression.getRight()
                 }));
 
@@ -60,7 +73,7 @@ public class BinaryExpressionHandler implements ExpressionHandler<BinaryExpressi
                         .append(new JumpTarget(elseLabel), boolean.class);
                 }
 
-                return StackChunk.negation(StackChunk.call(StackChunk.EQUALS, ctx.resolve(new Expression[] {
+                return StackChunk.negation(StackChunk.call(EQUALS, ctx.resolve(new Expression[] {
                     expression.getLeft(), expression.getRight()
                 })));
 

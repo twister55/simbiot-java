@@ -18,7 +18,6 @@ import dev.simbiot.compiler.expression.ExpressionResolver;
 import dev.simbiot.compiler.expression.IdentifierHandler;
 import dev.simbiot.endorphin.node.expression.ENDGetter;
 import dev.simbiot.endorphin.node.expression.IdentifierWithContext;
-import dev.simbiot.runtime.END;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
@@ -39,7 +38,6 @@ public class EndorphinProvider extends CompilingProvider {
     @Override
     protected MethodBindings createMethodBindings() {
         MethodBindings bindings = super.createMethodBindings();
-        bindings.bindInternal(END.class);
         for (Class<?> helper : helpers) {
             bindings.bind(helper);
         }

@@ -5,8 +5,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import dev.simbiot.runtime.Writer;
-
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */

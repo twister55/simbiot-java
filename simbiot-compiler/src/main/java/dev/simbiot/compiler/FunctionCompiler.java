@@ -16,7 +16,7 @@ import dev.simbiot.ast.statement.BlockStatement;
 import dev.simbiot.ast.statement.declaration.VariableDeclaration;
 import dev.simbiot.ast.statement.declaration.VariableDeclaration.Kind;
 import dev.simbiot.ast.statement.declaration.VariableDeclarator;
-import dev.simbiot.runtime.Writer;
+import dev.simbiot.Writer;
 import net.bytebuddy.description.modifier.FieldManifestation;
 import net.bytebuddy.description.modifier.Ownership;
 import net.bytebuddy.description.modifier.TypeManifestation;

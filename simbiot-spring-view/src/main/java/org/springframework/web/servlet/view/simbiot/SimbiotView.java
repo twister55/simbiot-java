@@ -10,8 +10,8 @@ import org.springframework.web.servlet.view.AbstractTemplateView;
 
 import dev.simbiot.Component;
 import dev.simbiot.Function;
-import dev.simbiot.runtime.StreamWriter;
-import dev.simbiot.runtime.Writer;
+import dev.simbiot.StreamWriter;
+import dev.simbiot.Writer;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>

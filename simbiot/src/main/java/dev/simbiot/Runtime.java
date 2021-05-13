@@ -1,4 +1,4 @@
-package dev.simbiot.runtime;
+package dev.simbiot;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -10,11 +10,7 @@ import java.util.Map;
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
-public class Objects {
-
-    public static boolean equals(Object a, Object b) {
-        return java.util.Objects.equals(a, b);
-    }
+public class Runtime {
 
     public static boolean is(Object value) {
         if (value instanceof String) {
@@ -50,10 +46,6 @@ public class Objects {
         return result;
     }
 
-    public static List<Object> array(Object... args) {
-        return Arrays.asList(args);
-    }
-
     @SuppressWarnings("rawtypes")
     public static Object access(Object obj, Object prop) {
         if (obj == null) {
@@ -65,11 +57,11 @@ public class Objects {
         }
 
         if (obj instanceof List) {
-            return ((List) obj).get(parseInt(prop));
+            return ((List) obj).get((Integer) prop);
         }
 
         if (obj.getClass().isArray()) {
-            return ((Object[]) obj)[parseInt(prop)];
+            return ((Object[]) obj)[(Integer) prop];
         }
 
         for (Field field : obj.getClass().getFields()) {
@@ -110,9 +102,5 @@ public class Objects {
         }
 
         throw new IllegalArgumentException(obj + " is not iterable");
-    }
-
-    private static int parseInt(Object value) {
-        return value instanceof Integer ? (Integer) value : Integer.parseInt(value.toString());
     }
 }

@@ -2,7 +2,7 @@ package dev.simbiot.compiler.bytecode;
 
 import java.util.List;
 
-import dev.simbiot.runtime.Objects;
+import dev.simbiot.Runtime;
 import net.bytebuddy.description.field.FieldDescription;
 import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.description.method.MethodDescription.InDefinedShape;
@@ -31,17 +31,9 @@ public class StackChunk implements StackManipulation {
     public static final StackChunk NULL = new StackChunk(Generic.OBJECT, NullConstant.INSTANCE);
 
     /**
-     * The {@link Objects#equals(Object, Object)} method.
+     * The {@link Runtime#is(Object)} method.
      */
-    public static final InDefinedShape EQUALS = new ForLoadedType(Objects.class)
-        .getDeclaredMethods()
-        .filter(named("equals"))
-        .getOnly();
-
-    /**
-     * The {@link Objects#is(Object)} method.
-     */
-    public static final InDefinedShape IS = new ForLoadedType(Objects.class)
+    public static final InDefinedShape IS = new ForLoadedType(Runtime.class)
         .getDeclaredMethods()
         .filter(named("is"))
         .getOnly();

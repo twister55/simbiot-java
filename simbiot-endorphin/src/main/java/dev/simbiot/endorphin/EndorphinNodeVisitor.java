@@ -47,7 +47,7 @@ import dev.simbiot.endorphin.node.ENDProgram;
 import dev.simbiot.endorphin.node.ENDTemplate;
 import dev.simbiot.endorphin.node.ENDVariable;
 import dev.simbiot.endorphin.node.ENDVariableStatement;
-import dev.simbiot.runtime.HTML;
+import dev.simbiot.HTML;
 import static dev.simbiot.compiler.BuiltIn.PROPS_GET_OR_DEFAULT;
 
 /**
@@ -103,7 +103,10 @@ public class EndorphinNodeVisitor implements Visitor {
 
     @Override
     public void visit(ENDTemplate node) {
-        builder.write(new CallExpression("@componentStart", new Literal(id), new Literal(hash), new Identifier("@props")), false);
+        builder.writeElementStart(id);
+        builder.write(" " + hash + "-host");
+        builder.write(new CallExpression("@attrs", new Identifier("@props")), false);
+        builder.write(">");
         for (ENDNode child : node.getBody()) {
             child.accept(this);
         }

@@ -1,7 +1,9 @@
-package dev.simbiot.runtime;
+package dev.simbiot;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -47,5 +49,33 @@ public class HTML {
         }
 
         return String.valueOf(value);
+    }
+
+    public static String attrs(Map<String, Object> props) {
+        StringBuilder builder = new StringBuilder();
+
+        for (Map.Entry<String, Object> entry : props.entrySet()) {
+            final String propKey = entry.getKey();
+            final Object propValue = entry.getValue();
+
+            if (propKey.contains(":")) {
+                continue;
+            }
+
+            builder.append(" ").append(propKey);
+            if (propValue != null) {
+                final Class<?> propValueClass = propValue.getClass();
+
+                if (propValue instanceof String || propValueClass.isPrimitive()) {
+                    builder.append("=\"").append(propValue).append("\"");
+                } else if (propValue instanceof Collection || propValueClass.isArray()) {
+                    builder.append("=\"[]\"");
+                } else {
+                    builder.append("=\"{}\"");
+                }
+            }
+        }
+
+        return builder.toString();
     }
 }

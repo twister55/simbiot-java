@@ -23,8 +23,8 @@ import dev.simbiot.compiler.expression.MemberExpressionHandler;
 import dev.simbiot.compiler.expression.ObjectExpressionHandler;
 import dev.simbiot.compiler.expression.UnaryExpressionHandler;
 import dev.simbiot.compiler.expression.UpdateExpressionHandler;
-import dev.simbiot.runtime.HTML;
-import dev.simbiot.runtime.Objects;
+import dev.simbiot.HTML;
+import dev.simbiot.Runtime;
 import net.bytebuddy.dynamic.DynamicType.Unloaded;
 import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
 import net.bytebuddy.dynamic.loading.InjectionClassLoader;
@@ -73,7 +73,7 @@ public class CompilingProvider implements ComponentProvider {
 
     protected MethodBindings createMethodBindings() {
         final MethodBindings bindings = new MethodBindings();
-        bindings.bindInternal(HTML.class, Objects.class);
+        bindings.bindInternal(HTML.class, Runtime.class);
         return bindings;
     }
 

@@ -1,4 +1,4 @@
-package dev.simbiot.runtime;
+package dev.simbiot;
 
 import java.io.Closeable;
 import java.io.IOException;

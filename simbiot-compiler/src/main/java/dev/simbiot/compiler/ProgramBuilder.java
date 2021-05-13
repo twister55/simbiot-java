@@ -14,7 +14,7 @@ import dev.simbiot.ast.statement.BlockStatement;
 import dev.simbiot.ast.statement.EmptyStatement;
 import dev.simbiot.ast.statement.ExpressionStatement;
 import dev.simbiot.ast.statement.Statement;
-import dev.simbiot.runtime.HTML;
+import dev.simbiot.HTML;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
@@ -41,7 +41,7 @@ public class ProgramBuilder {
             return;
         }
 
-        call(BuiltIn.WRITE, escape ? BuiltIn.escape(expression) : expression);
+        call(BuiltIn.WRITE, escape ? new CallExpression("@escape", expression) : expression);
     }
 
     public void writeElementStart(String name) {

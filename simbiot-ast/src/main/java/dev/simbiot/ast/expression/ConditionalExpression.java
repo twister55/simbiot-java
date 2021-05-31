@@ -10,13 +10,13 @@ import dev.simbiot.ast.BaseNode;
  */
 public class ConditionalExpression extends BaseNode implements Expression {
     private final Expression test;
-    private final Expression alternate;
     private final Expression consequent;
+    private final Expression alternate;
 
     @JsonCreator
     public ConditionalExpression(@JsonProperty("test") Expression test,
-                                 @JsonProperty("alternate") Expression alternate,
-                                 @JsonProperty("consequent") Expression consequent) {
+                                 @JsonProperty("consequent") Expression consequent,
+                                 @JsonProperty("alternate") Expression alternate) {
         super("ConditionalExpression");
         this.test = test;
         this.alternate = alternate;
@@ -32,11 +32,11 @@ public class ConditionalExpression extends BaseNode implements Expression {
         return test;
     }
 
-    public Expression getAlternate() {
-        return alternate;
-    }
-
     public Expression getConsequent() {
         return consequent;
+    }
+
+    public Expression getAlternate() {
+        return alternate;
     }
 }

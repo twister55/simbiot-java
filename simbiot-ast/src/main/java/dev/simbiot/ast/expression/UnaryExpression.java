@@ -8,11 +8,11 @@ import dev.simbiot.ast.BaseNode;
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class UnaryExpression extends BaseNode implements Expression {
-    private final Expression argument;
     private final String operator; // "-" | "+" | "!" | "~" | "typeof" | "void" | "delete"
+    private final Expression argument;
 
-    public UnaryExpression(@JsonProperty("argument") Expression argument,
-                           @JsonProperty("operator") String operator) {
+    public UnaryExpression(@JsonProperty("operator") String operator,
+                           @JsonProperty("argument") Expression argument) {
         super("UnaryExpression");
         this.operator = operator;
         this.argument = argument;
@@ -23,11 +23,11 @@ public class UnaryExpression extends BaseNode implements Expression {
         visitor.visit(this);
     }
 
-    public Expression getArgument() {
-        return argument;
-    }
-
     public String getOperator() {
         return operator;
+    }
+
+    public Expression getArgument() {
+        return argument;
     }
 }

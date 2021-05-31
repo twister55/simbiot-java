@@ -22,6 +22,10 @@ public class ArrayExpression extends BaseNode implements Expression {
         visitor.visit(this);
     }
 
+    public boolean isEmpty() {
+        return elements.length == 0;
+    }
+
     public Expression[] getElements() {
         return elements;
     }

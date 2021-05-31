@@ -26,6 +26,10 @@ public class ObjectExpression extends BaseNode implements Expression, Iterable<P
         this.properties = properties;
     }
 
+    public boolean isEmpty() {
+        return properties.isEmpty();
+    }
+
     @Override
     public void accept(Visitor visitor) {
         visitor.visit(this);

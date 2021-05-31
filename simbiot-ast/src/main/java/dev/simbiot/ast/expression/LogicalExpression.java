@@ -9,12 +9,12 @@ import dev.simbiot.ast.BaseNode;
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class LogicalExpression extends BaseNode implements Expression {
-    private final Operator operator;
+    private final String operator;
     private final Expression left;
     private final Expression right;
 
     @JsonCreator
-    public LogicalExpression(@JsonProperty("operator") Operator operator,
+    public LogicalExpression(@JsonProperty("operator") String operator,
                              @JsonProperty("left") Expression left,
                              @JsonProperty("right") Expression right) {
         super("LogicalExpression");
@@ -28,7 +28,7 @@ public class LogicalExpression extends BaseNode implements Expression {
         visitor.visit(this);
     }
 
-    public Operator getOperator() {
+    public String getOperator() {
         return operator;
     }
 
@@ -38,20 +38,5 @@ public class LogicalExpression extends BaseNode implements Expression {
 
     public Expression getRight() {
         return right;
-    }
-
-    public enum Operator {
-        AND("&&"),
-        OR("||");
-
-        private final String value;
-
-        Operator(String value) {
-            this.value = value;
-        }
-
-        public String value() {
-            return value;
-        }
     }
 }

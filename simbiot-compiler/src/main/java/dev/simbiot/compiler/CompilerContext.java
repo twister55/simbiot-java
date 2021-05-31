@@ -1,6 +1,7 @@
 package dev.simbiot.compiler;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import dev.simbiot.ast.statement.declaration.VariableDeclarator;
 import dev.simbiot.compiler.bytecode.PrimitiveBoxing;
 import dev.simbiot.compiler.bytecode.StackChunk;
 import dev.simbiot.compiler.expression.ExpressionResolver;
+import net.bytebuddy.description.field.FieldDescription;
 import net.bytebuddy.description.field.FieldDescription.InDefinedShape;
 import net.bytebuddy.description.field.FieldList;
 import net.bytebuddy.description.method.MethodDescription;
@@ -25,6 +27,8 @@ import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.DynamicType.Unloaded;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.implementation.bytecode.StackManipulation.Compound;
+import net.bytebuddy.implementation.bytecode.member.FieldAccess;
+import net.bytebuddy.implementation.bytecode.member.MethodVariableAccess;
 import static net.bytebuddy.implementation.bytecode.member.MethodVariableAccess.REFERENCE;
 import static net.bytebuddy.implementation.bytecode.member.MethodVariableAccess.of;
 import static net.bytebuddy.matcher.ElementMatchers.isStatic;
@@ -121,6 +125,11 @@ public class CompilerContext {
         throw new IllegalStateException(name + " is not defined");
     }
 
+    public StackChunk param(int index) {
+        final ParameterDescription param = this.parameters.get(index);
+        return new StackChunk(param.getType(), REFERENCE.loadFrom(param.getOffset()));
+    }
+
     public StackChunk resolve(String name) {
         if (name.startsWith("@")) {
             return field(name.substring(1));
@@ -133,12 +142,11 @@ public class CompilerContext {
         return resolver.resolve(this, expression);
     }
 
-    public StackChunk param(int index) {
-        final ParameterDescription param = this.parameters.get(index);
-        return new StackChunk(param.getType(), REFERENCE.loadFrom(param.getOffset()));
+    public List<StackChunk> resolve(Expression... expressions) {
+        return resolve(Arrays.asList(expressions));
     }
 
-    public List<StackChunk> resolve(Expression[] expressions) {
+    public List<StackChunk> resolve(List<Expression> expressions) {
         List<StackChunk> result = new ArrayList<>();
         for (Expression expression : expressions) {
             final StackChunk value = resolve(expression);
@@ -235,6 +243,17 @@ public class CompilerContext {
             }
         }
 
-        return fields.isEmpty() ? StackChunk.NULL : StackChunk.forField(fields.getOnly());
+        return fields.isEmpty() ? StackChunk.NULL : forField(fields.getOnly());
     }
+
+    private StackChunk forField(FieldDescription field) {
+        return new StackChunk(
+            field.getType(),
+            new Compound(
+                field.isStatic() ? StackManipulation.Trivial.INSTANCE : MethodVariableAccess.loadThis(),
+                FieldAccess.forField(field).read()
+            )
+        );
+    }
+
 }

@@ -1,7 +1,9 @@
 package dev.simbiot.compiler;
 
+import dev.simbiot.ast.expression.Expression;
 import dev.simbiot.ast.expression.Identifier;
 import dev.simbiot.ast.expression.MemberExpression;
+import dev.simbiot.ast.expression.UnaryExpression;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
@@ -20,4 +22,8 @@ public class BuiltIn {
 
     public static final Identifier ARG = new Identifier("@arg0");
     public static final MemberExpression ARG_GET_OR_DEFAULT = new MemberExpression(ARG, new Identifier("getOrDefault"));
+
+    public static Expression toBoolean(Expression expression) {
+        return new UnaryExpression("!", new UnaryExpression("!", expression));
+    }
 }

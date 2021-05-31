@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import dev.simbiot.ast.BaseNode;
 import dev.simbiot.ast.expression.ArrowFunctionExpression;
+import dev.simbiot.ast.expression.CallExpression;
 import dev.simbiot.ast.expression.Expression;
 
 /**
@@ -17,7 +18,7 @@ public class ENDFilter extends BaseNode implements Expression {
     public ENDFilter(@JsonProperty("object") Expression object,
                      @JsonProperty("expression") ArrowFunctionExpression expression,
                      @JsonProperty("multiple") boolean multiple) {
-        super("ENDCaller");
+        super("ENDFilter");
         this.object = object;
         this.expression = expression;
         this.multiple = multiple;
@@ -25,6 +26,6 @@ public class ENDFilter extends BaseNode implements Expression {
 
     @Override
     public void accept(Visitor visitor) {
-
+        visitor.visit(new CallExpression(multiple ? "@filter" : "@find", object, expression));
     }
 }

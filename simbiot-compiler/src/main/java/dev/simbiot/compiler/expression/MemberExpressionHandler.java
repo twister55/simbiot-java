@@ -1,35 +1,57 @@
 package dev.simbiot.compiler.expression;
 
-import dev.simbiot.ast.expression.CallExpression;
+import java.util.Arrays;
+
+import dev.simbiot.Runtime;
 import dev.simbiot.ast.expression.Expression;
 import dev.simbiot.ast.expression.Identifier;
 import dev.simbiot.ast.expression.Literal;
 import dev.simbiot.ast.expression.MemberExpression;
 import dev.simbiot.compiler.CompilerContext;
 import dev.simbiot.compiler.bytecode.StackChunk;
-import net.bytebuddy.implementation.bytecode.StackManipulation;
+import net.bytebuddy.description.method.MethodDescription.InDefinedShape;
+import net.bytebuddy.description.type.TypeDescription.ForLoadedType;
 import net.bytebuddy.implementation.bytecode.collection.ArrayAccess;
 import net.bytebuddy.implementation.bytecode.constant.IntegerConstant;
+import static net.bytebuddy.matcher.ElementMatchers.named;
 
 /**
- * @author <a href="mailto:vadim.eliseev@corp.mail.ru">Vadim Eliseev</a>
+ * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class MemberExpressionHandler implements ExpressionHandler<MemberExpression> {
+
+    /**
+     * The {@link Runtime#access(Object, Object)} method.
+     */
+    private static final InDefinedShape OBJECT_ACCESS = new ForLoadedType(Runtime.class)
+        .getDeclaredMethods()
+        .filter(named("object"))
+        .getOnly();
 
     @Override
     public StackChunk handle(CompilerContext ctx, MemberExpression expression) {
         final StackChunk obj = ctx.resolve(expression.getObject());
-        final Expression property = expression.getProperty();
 
         if (obj.type().isArray()) {
-            final Literal index = (Literal) property;
-            return new StackChunk(
-                obj.type().getComponentType(),
-                new StackManipulation.Compound(obj, IntegerConstant.forValue(index.getInt()), ArrayAccess.REFERENCE.load())
-            );
+            return arrayAccess(obj, (Literal) expression.getProperty());
         }
 
-        final Expression key = property instanceof Literal ? property : new Literal(((Identifier) property).getName());
-        return ctx.resolve(new CallExpression("@access", expression.getObject(), key));
+        return objectAccess(ctx, obj, expression.getProperty());
+    }
+
+    private StackChunk arrayAccess(StackChunk obj, Literal index) {
+        return new StackChunk()
+            .append(obj)
+            .append(IntegerConstant.forValue(index.getInt()))
+            .append(ArrayAccess.REFERENCE.load())
+            .as(obj.type().getComponentType());
+    }
+
+    private StackChunk objectAccess(CompilerContext ctx, StackChunk obj, Expression property) {
+        final Literal key = property instanceof Literal ?
+            (Literal) property :
+            new Literal(((Identifier) property).getName());
+
+        return StackChunk.call(OBJECT_ACCESS, Arrays.asList(obj, ctx.resolve(key)));
     }
 }

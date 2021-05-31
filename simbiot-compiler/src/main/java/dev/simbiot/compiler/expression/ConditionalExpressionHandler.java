@@ -1,15 +1,19 @@
 package dev.simbiot.compiler.expression;
 
+import java.util.Objects;
+
 import dev.simbiot.ast.expression.ConditionalExpression;
+import dev.simbiot.compiler.BuiltIn;
 import dev.simbiot.compiler.CompilerContext;
 import dev.simbiot.compiler.bytecode.GoTo;
 import dev.simbiot.compiler.bytecode.IfFalse;
 import dev.simbiot.compiler.bytecode.JumpTarget;
 import dev.simbiot.compiler.bytecode.StackChunk;
+import net.bytebuddy.description.type.TypeDescription.Generic;
 import net.bytebuddy.jar.asm.Label;
 
 /**
- * @author <a href="mailto:vadim.eliseev@corp.mail.ru">Vadim Eliseev</a>
+ * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class ConditionalExpressionHandler implements ExpressionHandler<ConditionalExpression> {
 
@@ -18,12 +22,20 @@ public class ConditionalExpressionHandler implements ExpressionHandler<Condition
         final Label ifLabel = new Label();
         final Label elseLabel = new Label();
 
-        return StackChunk.condition(ctx.resolve(expression.getTest()))
+        final StackChunk consequent = ctx.resolve(expression.getConsequent());
+        final StackChunk alternate = expression.getAlternate() == null ? StackChunk.NULL : ctx.resolve(expression.getAlternate());
+
+        return ctx.resolve(BuiltIn.toBoolean(expression.getTest()))
             .append(new IfFalse(ifLabel))
-            .append(ctx.resolve(expression.getConsequent()))
+            .append(consequent)
             .append(new GoTo(elseLabel))
             .append(new JumpTarget(ifLabel))
-            .append(ctx.resolve(expression.getAlternate()))
-            .append(new JumpTarget(elseLabel));
+            .append(alternate)
+            .append(new JumpTarget(elseLabel))
+            .as(resolveType(consequent, alternate));
+    }
+
+    private Generic resolveType(StackChunk consequent, StackChunk alternate) {
+        return Objects.equals(consequent.type(), alternate.type()) ? consequent.type() : Generic.OBJECT;
     }
 }

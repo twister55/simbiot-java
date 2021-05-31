@@ -8,6 +8,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import dev.simbiot.Component;
 import dev.simbiot.ComponentProvider;
+import dev.simbiot.HTML;
+import dev.simbiot.Runtime;
 import dev.simbiot.ast.Program;
 import dev.simbiot.ast.ProgramLoader;
 import dev.simbiot.compiler.expression.ArrayExpressionHandler;
@@ -19,12 +21,11 @@ import dev.simbiot.compiler.expression.ExpressionResolver;
 import dev.simbiot.compiler.expression.FunctionExpressionHandler;
 import dev.simbiot.compiler.expression.IdentifierHandler;
 import dev.simbiot.compiler.expression.LiteralHandler;
+import dev.simbiot.compiler.expression.LogicalExpressionHandler;
 import dev.simbiot.compiler.expression.MemberExpressionHandler;
 import dev.simbiot.compiler.expression.ObjectExpressionHandler;
 import dev.simbiot.compiler.expression.UnaryExpressionHandler;
 import dev.simbiot.compiler.expression.UpdateExpressionHandler;
-import dev.simbiot.HTML;
-import dev.simbiot.Runtime;
 import net.bytebuddy.dynamic.DynamicType.Unloaded;
 import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
 import net.bytebuddy.dynamic.loading.InjectionClassLoader;
@@ -87,6 +88,7 @@ public class CompilingProvider implements ComponentProvider {
             .withHandler("FunctionExpression", new FunctionExpressionHandler())
             .withHandler("Identifier", new IdentifierHandler())
             .withHandler("Literal", new LiteralHandler())
+            .withHandler("LogicalExpression", new LogicalExpressionHandler())
             .withHandler("MemberExpression", new MemberExpressionHandler())
             .withHandler("ObjectExpression", new ObjectExpressionHandler())
             .withHandler("UnaryExpression", new UnaryExpressionHandler())

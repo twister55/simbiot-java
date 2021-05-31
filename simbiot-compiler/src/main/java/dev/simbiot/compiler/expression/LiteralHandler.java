@@ -7,7 +7,7 @@ import net.bytebuddy.implementation.bytecode.constant.IntegerConstant;
 import net.bytebuddy.implementation.bytecode.constant.TextConstant;
 
 /**
- * @author <a href="mailto:vadim.eliseev@corp.mail.ru">Vadim Eliseev</a>
+ * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class LiteralHandler implements ExpressionHandler<Literal> {
     @Override

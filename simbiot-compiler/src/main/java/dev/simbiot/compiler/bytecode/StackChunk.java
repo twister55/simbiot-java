@@ -1,23 +1,17 @@
 package dev.simbiot.compiler.bytecode;
 
+import java.util.Collections;
 import java.util.List;
 
-import dev.simbiot.Runtime;
-import net.bytebuddy.description.field.FieldDescription;
 import net.bytebuddy.description.method.MethodDescription;
-import net.bytebuddy.description.method.MethodDescription.InDefinedShape;
 import net.bytebuddy.description.method.MethodList;
 import net.bytebuddy.description.type.TypeDescription.ForLoadedType;
 import net.bytebuddy.description.type.TypeDescription.Generic;
 import net.bytebuddy.description.type.TypeDescription.Generic.OfNonGenericType;
 import net.bytebuddy.implementation.Implementation;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
-import net.bytebuddy.implementation.bytecode.constant.IntegerConstant;
 import net.bytebuddy.implementation.bytecode.constant.NullConstant;
-import net.bytebuddy.implementation.bytecode.member.FieldAccess;
 import net.bytebuddy.implementation.bytecode.member.MethodInvocation;
-import net.bytebuddy.implementation.bytecode.member.MethodVariableAccess;
-import net.bytebuddy.jar.asm.Label;
 import net.bytebuddy.jar.asm.MethodVisitor;
 import static net.bytebuddy.implementation.bytecode.collection.ArrayFactory.forType;
 import static net.bytebuddy.matcher.ElementMatchers.named;
@@ -30,46 +24,12 @@ import static net.bytebuddy.matcher.ElementMatchers.takesArguments;
 public class StackChunk implements StackManipulation {
     public static final StackChunk NULL = new StackChunk(Generic.OBJECT, NullConstant.INSTANCE);
 
-    /**
-     * The {@link Runtime#is(Object)} method.
-     */
-    public static final InDefinedShape IS = new ForLoadedType(Runtime.class)
-        .getDeclaredMethods()
-        .filter(named("is"))
-        .getOnly();
-
     public static StackChunk of(Class<?> type, StackManipulation manipulation) {
         return new StackChunk(ForLoadedType.of(type).asGenericType(), manipulation);
     }
 
-    public static StackChunk forField(FieldDescription field) {
-        return new StackChunk(
-            field.getType(),
-            new Compound(
-                field.isStatic() ? Trivial.INSTANCE : MethodVariableAccess.loadThis(),
-                FieldAccess.forField(field).read()
-            )
-        );
-    }
-
-    public static StackChunk condition(StackChunk test) {
-        if (!test.type().represents(boolean.class)) {
-            test.append(MethodInvocation.invoke(IS), boolean.class);
-        }
-        return test;
-    }
-
-    public static StackChunk negation(StackChunk value) {
-        final Label ifLabel = new Label();
-        final Label elseLabel = new Label();
-
-        return StackChunk.condition(value)
-            .append(new IfTrue(ifLabel))
-            .append(IntegerConstant.forValue(true))
-            .append(new GoTo(elseLabel))
-            .append(new JumpTarget(ifLabel))
-            .append(IntegerConstant.forValue(false))
-            .append(new JumpTarget(elseLabel), boolean.class);
+    public static StackChunk call(MethodDescription method) {
+        return call(method, Collections.emptyList());
     }
 
     public static StackChunk call(MethodDescription method, List<StackChunk> arguments) {
@@ -105,6 +65,11 @@ public class StackChunk implements StackManipulation {
 
     public StackChunk as(Class<?> type) {
         this.type = ForLoadedType.of(type).asGenericType();
+        return this;
+    }
+
+    public StackChunk as(Generic type) {
+        this.type = type;
         return this;
     }
 
@@ -158,7 +123,7 @@ public class StackChunk implements StackManipulation {
 
     private StackChunk invoke(MethodDescription method, List<StackChunk> arguments) {
         if (method.isVarArgs()) {
-            append(forType(ForLoadedType.of(Object.class).asGenericType()).withValues(arguments));
+            append(forType(Generic.OBJECT).withValues(arguments));
         } else {
             for (final StackChunk arg : arguments) {
                 append(arg);
@@ -167,5 +132,4 @@ public class StackChunk implements StackManipulation {
 
         return append(MethodInvocation.invoke(method), method.getReturnType());
     }
-
 }

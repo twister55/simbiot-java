@@ -16,8 +16,8 @@ import dev.simbiot.compiler.bytecode.StackChunk;
 import dev.simbiot.compiler.expression.CallExpressionHandler;
 import dev.simbiot.compiler.expression.ExpressionResolver;
 import dev.simbiot.compiler.expression.IdentifierHandler;
-import dev.simbiot.endorphin.node.expression.ENDGetter;
 import dev.simbiot.endorphin.node.expression.IdentifierWithContext;
+import dev.simbiot.endorphin.node.expression.IdentifierWithContext.Context;
 
 /**
  * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
@@ -47,14 +47,13 @@ public class EndorphinProvider extends CompilingProvider {
     @Override
     protected ExpressionResolver createExpressionResolver() {
         return super.createExpressionResolver()
-            .<ENDGetter>withHandler("ENDGetter", (ctx, expression) -> ctx.call("@getter", expression.getPath()))
             .withHandler("Identifier", new IdentifierHandler() {
                 @Override
                 public StackChunk handle(CompilerContext ctx, Identifier expression) {
                     if (expression instanceof IdentifierWithContext) {
                         final IdentifierWithContext id = (IdentifierWithContext) expression;
 
-                        if (id.getContext() == IdentifierWithContext.Context.PROPERTY) {
+                        if (id.getContext() == Context.PROPERTY) {
                             return ctx.resolve(new CallExpression(BuiltIn.PROPS_GET, new Literal(id.getName())));
                         }
                     }
@@ -68,9 +67,9 @@ public class EndorphinProvider extends CompilingProvider {
                     final Expression callee = expression.getCallee();
 
                     if (callee instanceof IdentifierWithContext) {
-                        final IdentifierWithContext.Context context = ((IdentifierWithContext) callee).getContext();
+                        final IdentifierWithContext id = (IdentifierWithContext) callee;
 
-                        if (context == IdentifierWithContext.Context.HELPER) {
+                        if (id.getContext() == Context.HELPER) {
                             final Expression[] argsWithThis = expression.getArguments();
                             Expression[] args = Arrays.copyOfRange(argsWithThis, 1, argsWithThis.length);
                             return super.handle(ctx, new CallExpression(callee, args));

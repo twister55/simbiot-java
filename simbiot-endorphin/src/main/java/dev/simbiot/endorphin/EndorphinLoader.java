@@ -21,7 +21,6 @@ import dev.simbiot.ast.expression.Identifier;
 import dev.simbiot.endorphin.node.expression.ENDCaller;
 import dev.simbiot.endorphin.node.expression.ENDFilter;
 import dev.simbiot.endorphin.node.expression.ENDGetter;
-import dev.simbiot.endorphin.node.expression.ENDGetterPrefix;
 import dev.simbiot.endorphin.node.expression.IdentifierWithContext;
 import dev.simbiot.endorphin.node.expression.IdentifierWithContext.Context;
 
@@ -33,7 +32,7 @@ public class EndorphinLoader extends ProgramLoader<EndorphinAst> {
     public EndorphinLoader() {
         super(EndorphinAst.class);
         registerModule(new SimpleModule()
-            .registerSubtypes(ENDGetter.class, ENDCaller.class, ENDGetterPrefix.class, ENDFilter.class)
+            .registerSubtypes(ENDGetter.class, ENDCaller.class, ENDFilter.class)
             .setDeserializerModifier(new BeanDeserializerModifier() {
                 @Override
                 public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc, JsonDeserializer<?> deserializer) {

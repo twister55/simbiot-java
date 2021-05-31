@@ -131,7 +131,7 @@ public abstract class Compiler {
             final Label ifLabel = new Label();
             final Label elseLabel = new Label();
 
-            append(StackChunk.condition(ctx.resolve(statement.getTest())));
+            append(ctx.resolve(BuiltIn.toBoolean(statement.getTest())));
             append(new IfFalse(ifLabel));
             append(statement.getConsequent());
 

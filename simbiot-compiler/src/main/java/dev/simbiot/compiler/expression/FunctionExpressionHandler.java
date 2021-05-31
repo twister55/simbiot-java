@@ -15,7 +15,7 @@ import static dev.simbiot.compiler.BuiltIn.WRITER;
 import static net.bytebuddy.matcher.ElementMatchers.isConstructor;
 
 /**
- * @author <a href="mailto:vadim.eliseev@corp.mail.ru">Vadim Eliseev</a>
+ * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class FunctionExpressionHandler implements ExpressionHandler<FunctionExpression> {
 

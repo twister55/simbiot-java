@@ -1,5 +1,6 @@
 package dev.simbiot.compiler.expression;
 
+import dev.simbiot.ast.UnsupportedNodeException;
 import dev.simbiot.ast.expression.CallExpression;
 import dev.simbiot.ast.expression.Expression;
 import dev.simbiot.ast.expression.Identifier;
@@ -13,7 +14,7 @@ import static dev.simbiot.compiler.BuiltIn.WRITER;
 import static dev.simbiot.compiler.BuiltIn.WRITER_WRITE;
 
 /**
- * @author <a href="mailto:vadim.eliseev@corp.mail.ru">Vadim Eliseev</a>
+ * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class CallExpressionHandler implements ExpressionHandler<CallExpression> {
 
@@ -30,7 +31,7 @@ public class CallExpressionHandler implements ExpressionHandler<CallExpression> 
             return dispatch(ctx, (MemberExpression) callee, args);
         }
 
-        throw new IllegalArgumentException(callee.getType() + " as callee is not supported");
+        throw new UnsupportedNodeException(callee, "callee");
     }
 
     protected StackChunk dispatch(CompilerContext ctx, Identifier callee, Expression[] args) {

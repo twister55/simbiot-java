@@ -7,7 +7,7 @@ import dev.simbiot.compiler.bytecode.StackChunk;
 import static net.bytebuddy.implementation.bytecode.member.MethodVariableAccess.INTEGER;
 
 /**
- * @author <a href="mailto:vadim.eliseev@corp.mail.ru">Vadim Eliseev</a>
+ * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class UpdateExpressionHandler implements ExpressionHandler<UpdateExpression> {
 

@@ -7,7 +7,7 @@ import dev.simbiot.compiler.CompilerContext;
 import dev.simbiot.compiler.bytecode.StackChunk;
 
 /**
- * @author <a href="mailto:vadim.eliseev@corp.mail.ru">Vadim Eliseev</a>
+ * @author <a href="mailto:vadim.yelisseyev@gmail.com">Vadim Yelisseyev</a>
  */
 public class ArrowFunctionExpressionHandler implements ExpressionHandler<ArrowFunctionExpression> {
 
